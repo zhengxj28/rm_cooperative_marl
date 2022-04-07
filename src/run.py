@@ -32,7 +32,11 @@ if __name__ == "__main__":
     map_name = 'nav_map2'  # 2 agents navigate to a,b, placed with misdirection
     # map_name = 'nav_map3'  # 2 agents navigate to a,b, no misdirection
     # map_name = 'nav_map5'  # 5 agents navigate to a,b,c,d,e, placed with misdirection
+<<<<<<< Updated upstream
     # abcde
+=======
+    map_name1 = 'blabla'
+>>>>>>> Stashed changes
 
     task_name = 'navigation'  # simple team rm
     # task_name = 'navigation_complex_rm'  # complex team rm, no rm projection
