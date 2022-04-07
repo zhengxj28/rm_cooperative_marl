@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="zhengxuejing@222.200.177.150:21022 key" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="zhengxuejing@222.200.177.150:21022 key">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/zhengxuejing/rm_cooperative_marl_main" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="zhengxuejing@222.200.177.150:21022 key (1)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/zhengxuejing/rm_cooperative_marl_main" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>

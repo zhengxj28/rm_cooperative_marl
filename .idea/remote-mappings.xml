@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteMappingsManager">
+    <list>
+      <list>
+        <remote-mappings server-id="python@sftp://zhengxuejing@222.200.177.150:21022/home/ub-d504/anaconda3/envs/zxj/bin/python">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$/../../multiagent-particle-envs-master" remote-root="/home/zhengxuejing/rm_cooperative_marl_main" />
+            </list>
+          </settings>
+        </remote-mappings>
+      </list>
+    </list>
+  </component>
+</project>
