@@ -39,6 +39,7 @@ if __name__ == "__main__":
 
     map_name3 = 'lseijif'
 
+
     task_name = 'navigation'  # simple team rm
     # task_name = 'navigation_complex_rm'  # complex team rm, no rm projection
     # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection,
