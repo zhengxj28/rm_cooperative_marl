@@ -44,8 +44,8 @@ if __name__ == "__main__":
     # alg_name = 'iql'
     # alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
     # alg_name = 'iqrm'  # independent qrm
-    alg_name = 'hie_iqrm'  # hierarchical iqrm
-    # alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
+    # alg_name = 'hie_iqrm'  # hierarchical iqrm
+    alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
 
     print('num_times:', num_times)
     print('env_name:', env_name)
