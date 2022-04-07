@@ -38,7 +38,7 @@ if __name__ == "__main__":
     map_name2 = 'labalaba'
 
     map_name3 = 'lseijif'
-
+    gaiyixia = 1
 
     task_name = 'navigation'  # simple team rm
     # task_name = 'navigation_complex_rm'  # complex team rm, no rm projection
