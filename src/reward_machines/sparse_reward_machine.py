@@ -34,12 +34,13 @@ class SparseRewardMachine:
         if type(event) == str:
             event = (event,)
         elif len(event) > 1:
-            event = list(set(event) & self.propositions)  # intersection
+            event = list(set(event) & self.propositions)  # only consider related propositions
             event.sort()
         event = tuple(event)
         if u1 in self.delta_u:
             if event in self.delta_u[u1]:
                 return self.delta_u[u1][event]
+        # default transition
         return u1
 
     def get_reward(self, u1, u2, s1=None, a=None, s2=None):

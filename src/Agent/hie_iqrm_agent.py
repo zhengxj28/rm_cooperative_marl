@@ -3,6 +3,7 @@ from src.tester.tester import Tester
 import numpy as np
 import random, time, os, math
 import matplotlib.pyplot as plt
+import torch
 
 
 class Agent:
@@ -35,9 +36,8 @@ class Agent:
         """
         self.rm_file_name = rm_file_name
         self.agent_id = agent_id
-        # self.s_i = s_i
-        # self.s = s_i
         self.actions = actions
+        self.num_actions = len(actions)
         self.num_states = num_states
 
         self.avail_rms = []  # available rms of this agent
@@ -67,12 +67,6 @@ class Agent:
         self.is_task_complete = self.rm.is_terminal_state(self.u)
         self.rm_id = rm_id
 
-    # def reset_state(self):
-    #     """
-    #     Reset the agent to the initial state of the environment.
-    #     """
-    #     self.s = self.s_i
-
     def initialize_reward_machine(self):
         """
         Reset the state of the reward machine to the initial state and reset task status.
@@ -93,43 +87,61 @@ class Agent:
 
         Outputs
         -------
-        s : int
-            Index of the agent's current state.
         a : int
             Selected next action for this agent.
         """
 
+        # T = learning_params.T
+        #
+        # if random.random() < epsilon:
+        #     a = random.choice(self.actions)
+        #     a_selected = a
+        # else:
+        #     pr_sum = np.sum(np.exp(self.q[self.rm_id, s, self.u, :] * T))
+        #     pr = np.exp(self.q[self.rm_id, s, self.u, :] * T) / pr_sum  # pr[a] is probability of taking action a
+        #
+        #     # If any q-values are so large that the softmax function returns infinity,
+        #     # make the corresponding actions equally likely
+        #     if any(np.isnan(pr)):
+        #         print('BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
+        #         temp = np.array(np.isnan(pr), dtype=float)
+        #         pr = temp / np.sum(temp)
+        #
+        #     pr_select = np.zeros(len(self.actions) + 1)
+        #     pr_select[0] = 0
+        #     for i in range(len(self.actions)):
+        #         pr_select[i + 1] = pr_select[i] + pr[i]
+        #
+        #     randn = random.random()
+        #     for a in self.actions:
+        #         if randn >= pr_select[a] and randn <= pr_select[a + 1]:
+        #             a_selected = a
+        #             break
+        #
+        #     # best_actions = np.where(self.q[self.s, self.u, :] == np.max(self.q[self.s, self.u, :]))[0]
+        #     # a_selected = random.choice(best_actions)
+        #
+        # a = a_selected
+
         T = learning_params.T
 
         if random.random() < epsilon:
-            a = random.choice(self.actions)
-            a_selected = a
+            # a = random.choice(self.actions)
+            weight = np.ones([self.num_actions])
         else:
-            pr_sum = np.sum(np.exp(self.q[self.rm_id, s, self.u, :] * T))
-            pr = np.exp(self.q[self.rm_id, s, self.u, :] * T) / pr_sum  # pr[a] is probability of taking action a
+            weight = np.exp(self.q[self.rm_id, s, self.u, :] * T)
+        pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
 
-            # If any q-values are so large that the softmax function returns infinity,
-            # make the corresponding actions equally likely
-            if any(np.isnan(pr)):
-                print('BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
-                temp = np.array(np.isnan(pr), dtype=float)
-                pr = temp / np.sum(temp)
+        # If any q-values are so large that the softmax function returns infinity,
+        # make the corresponding actions equally likely
+        if any(np.isnan(pr)):
+            print('BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
+            temp = np.array(np.isnan(pr), dtype=float)
+            pr = temp / np.sum(temp)
 
-            pr_select = np.zeros(len(self.actions) + 1)
-            pr_select[0] = 0
-            for i in range(len(self.actions)):
-                pr_select[i + 1] = pr_select[i] + pr[i]
-
-            randn = random.random()
-            for a in self.actions:
-                if randn >= pr_select[a] and randn <= pr_select[a + 1]:
-                    a_selected = a
-                    break
-
-            # best_actions = np.where(self.q[self.s, self.u, :] == np.max(self.q[self.s, self.u, :]))[0]
-            # a_selected = random.choice(best_actions)
-
-        a = a_selected
+        pr = torch.tensor(pr)
+        dist = torch.distributions.Categorical(pr)
+        a = dist.sample()
 
         return a
 
@@ -233,8 +245,8 @@ class High_Controller:
         # Let N be num_agents, O_i is num_rm of agent i, then the shape is UxO1X...XON
         # each option is the rm tuple of agents: o=(rm1,rm2,...,rmN)
         q_shape = [len(self.rm.U), ] + num_rm_list
-        # self.q = np.zeros(q_shape)
-        self.q = np.ones(q_shape)
+        self.q = np.zeros(q_shape)
+        # self.q = np.ones(q_shape)
         self.num_options = self.q[0].size  # number of all possible options
         # self.total_local_reward = 0
         self.is_task_complete = 0
@@ -265,14 +277,14 @@ class High_Controller:
             Selected next action for this agent.
         """
 
-        T = learning_params.T
-        if random.random() < epsilon:
-            o = []
-            for i in range(self.num_agents):
-                o.append(random.choice([id for id in range(self.num_rm_list[i])]))
-        else:
-            # epsilon-greedy implementation
-            o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
+        # T = learning_params.T
+        # if random.random() < epsilon:
+        #     o = []
+        #     for i in range(self.num_agents):
+        #         o.append(random.choice([id for id in range(self.num_rm_list[i])]))
+        # else:
+        #     # epsilon-greedy implementation
+        #     o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
 
             # softmax implementation
             # pr_sum = np.sum(np.exp(self.q[self.u, :] * T))
@@ -298,6 +310,34 @@ class High_Controller:
             #         selected_i = i
             #         break
             # o = np.unravel_index(selected_i, self.num_rm_list)
+
+
+        T = learning_params.T_controller  # temperature of softmax
+        if random.random() < epsilon:
+            weight = np.ones(self.num_rm_list)
+            # o = []
+            # for i in range(self.num_agents):
+            #     o.append(random.choice([id for id in range(self.num_rm_list[i])]))
+        else:
+            # epsilon-greedy implementation
+            # o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
+
+            # softmax implementation
+            weight = np.exp(self.q[self.u, :] * T)
+
+        pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
+        pr = np.reshape(pr, [pr.size])  # reshape to 1d array
+        # If any q-values are so large that the softmax function returns infinity,
+        # make the corresponding actions equally likely
+        if any(np.isnan(pr)):
+            print('GET OPTION: BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
+            temp = np.array(np.isnan(np.reshape(pr, [pr.size])), dtype=float)
+            pr = temp / np.sum(temp)
+
+        pr = torch.tensor(pr)
+        dist = torch.distributions.Categorical(pr)
+        o = dist.sample()
+        o = np.unravel_index(o, self.num_rm_list)
 
         return list(o)
 

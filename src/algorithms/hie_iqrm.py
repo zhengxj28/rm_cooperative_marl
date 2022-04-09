@@ -52,13 +52,13 @@ def run_qlearning_task(epsilon,
         tau = 0
         u_start = controller.u  # store current state of controller
         while (tau < tester.max_option_length) and not all(agent.is_task_complete for agent in agent_list):
-            # independent q-learning
             # Perform a q-learning step.
             s = env.get_state()
             a = np.array([agent_list[i].get_next_action(s[i], epsilon, learning_params) for i in range(num_agents)])
             r_team, l, s_new = env.environment_step(a)
             G = math.pow(tester.learning_params.gamma_controller, tau) * r_team + G
-
+            # if 'a' in l:
+            #     print()
             for ag_id in range(num_agents):
                 agent = agent_list[ag_id]
 
@@ -91,14 +91,14 @@ def run_qlearning_task(epsilon,
                 for rm_id in range(agent.num_rms):
                     other_rm = agent.avail_rms[rm_id]
                     if not rm_id == o[ag_id]:  # we just update other rm, since the chosen rm has been updated
-                        for u_ in other_rm.U:
-                            l_c = env.get_mdp_label(s, s_new, u_)
-                            u2_ = other_rm.get_next_state(u_, l_c)
-                            r = other_rm.get_reward(u_, u2_)
+                        for u1_ in other_rm.U:
+                            l_c = env.get_mdp_label(s, s_new)
+                            u2_ = other_rm.get_next_state(u1_, l_c)
+                            r = other_rm.get_reward(u1_, u2_)
                             agent.update_q_function(rm_id,
                                                     s=s[ag_id],
                                                     s_new=s_new[ag_id],
-                                                    u=u_,
+                                                    u=u1_,
                                                     u_new=u2_,
                                                     a=a[ag_id],
                                                     reward=r,
@@ -219,11 +219,7 @@ def run_test(controller,
     for i in range(num_agents):
         agent_list[i].initialize_reward_machine()
 
-    s_team = testing_env.get_state()
     a_team = np.full(num_agents, -1, dtype=int)
-    # u_team = np.full(num_agents, -1, dtype=int)
-    # for i in range(num_agents):
-    #     u_team[i] = agent_list[i].u
     testing_reward = 0
 
     trajectory = []
@@ -310,7 +306,6 @@ def run_hie_iqrm_experiment(tester,
 
         for i in range(num_agents):
             actions = testing_env.get_actions(i)
-            s_i = testing_env.get_initial_state(i)  # initial state of agent i
             agent_i = Agent(rm_learning_file_name_list[i], testing_env.num_states, actions, i)
             agent_list.append(agent_i)
             num_rm_list.append(agent_i.num_rms)

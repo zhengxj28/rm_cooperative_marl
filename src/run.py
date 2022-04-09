@@ -33,13 +33,6 @@ if __name__ == "__main__":
     # map_name = 'nav_map3'  # 2 agents navigate to a,b, no misdirection
     # map_name = 'nav_map5'  # 5 agents navigate to a,b,c,d,e, placed with misdirection
 
-    # abcde
-    map_name1 = 'blabla'
-    map_name2 = 'labalaba'
-
-    map_name3 = 'lseijif'
-    gaiyixia = 1
-
     task_name = 'navigation'  # simple team rm
     # task_name = 'navigation_complex_rm'  # complex team rm, no rm projection
     # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection,
@@ -51,8 +44,8 @@ if __name__ == "__main__":
     # alg_name = 'iql'
     # alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
     # alg_name = 'iqrm'  # independent qrm
-    # alg_name = 'hie_iqrm'  # hierarchical iqrm
-    alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
+    alg_name = 'hie_iqrm'  # hierarchical iqrm
+    # alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
 
     print('num_times:', num_times)
     print('env_name:', env_name)

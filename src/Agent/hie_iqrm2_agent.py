@@ -282,7 +282,7 @@ class High_Controller:
         # If any q-values are so large that the softmax function returns infinity,
         # make the corresponding actions equally likely
         if any(np.isnan(pr)):
-            print('BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
+            print('GET OPTION: BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
             temp = np.array(np.isnan(np.reshape(pr, [pr.size])), dtype=float)
             pr = temp / np.sum(temp)
 

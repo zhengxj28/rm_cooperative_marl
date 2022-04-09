@@ -42,7 +42,7 @@ def run_qlearning_task(epsilon,
     env = load_testing_env(tester)
 
     steps = 0
-    while steps < num_steps:
+    while steps < num_steps and not env.reward_machine.is_terminal_state(env.u):
         # choose the best rm for each agent by controller
         o = controller.get_next_option(epsilon, learning_params)
         for ag_id in range(num_agents):
@@ -51,7 +51,7 @@ def run_qlearning_task(epsilon,
         G = 0  # cumulative discounted team reward
         tau = 0
         u_start = controller.u  # store current state of controller
-        while (tau < tester.max_option_length) and not all(agent.is_task_complete for agent in agent_list):
+        while (tau < tester.max_option_length) and not env.reward_machine.is_terminal_state(env.u):
             # Perform a q-learning step.
             s = env.get_state()
             a = np.array([agent_list[i].get_next_action(s[i], epsilon, learning_params) for i in range(num_agents)])
@@ -62,41 +62,39 @@ def run_qlearning_task(epsilon,
                 agent = agent_list[ag_id]
 
                 # update currently chosen rm of this agent
-                u1 = agent.u
-                u2 = agent.rm.get_next_state(u1, l)
-                r_ag = agent.rm.get_reward(u1, u2)  # reward of current RM state from current chosen rm
-                agent.update_agent(label=l)  # update q-function and RM state
+                # u1 = agent.u
+                # u2 = agent.rm.get_next_state(u1, l)
+                # r_ag = agent.rm.get_reward(u1, u2)  # reward of current RM state from current chosen rm
+                agent.update_agent(label=l)  # update RM state of this agent
                 # update Q-functions of chosen rm
-                for u1_ in agent.rm.U:
-                    if u1_ not in agent.rm.T:
-                        l_c = env.get_mdp_label(s, s_new)  # counterfactual label
-                        u2_ = agent.rm.get_next_state(u1_, l_c)
-                        r_c = agent.rm.get_reward(u1_, u2_)
-                        agent.update_q_function(agent.rm_id,
+                # for u1_ in agent.rm.U:
+                #     if u1_ not in agent.rm.T:
+                #         l_c = env.get_mdp_label(s, s_new)  # counterfactual label
+                #         u2_ = agent.rm.get_next_state(u1_, l_c)
+                #         r_c = agent.rm.get_reward(u1_, u2_)
+                #         agent.update_q_function(agent.rm_id,
+                #                                 s=s[ag_id],
+                #                                 s_new=s_new[ag_id],
+                #                                 u=u1_,
+                #                                 u_new=u2_,
+                #                                 a=a[ag_id],
+                #                                 reward=r_c,
+                #                                 learning_params=learning_params)
+
+                # update all the Q-functions of all RMs of this agent
+                for rm_id in range(agent.num_rms):
+                    rm = agent.avail_rms[rm_id]
+                    for u1_ in rm.U:
+                        u2_ = rm.get_next_state(u1_, l)
+                        r = rm.get_reward(u1_, u2_)
+                        agent.update_q_function(rm_id=rm_id,
                                                 s=s[ag_id],
                                                 s_new=s_new[ag_id],
                                                 u=u1_,
                                                 u_new=u2_,
                                                 a=a[ag_id],
-                                                reward=r_c,
+                                                reward=r,
                                                 learning_params=learning_params)
-
-                # update all the Q-functions of other RM of this agent
-                for rm_id in range(agent.num_rms):
-                    other_rm = agent.avail_rms[rm_id]
-                    if not rm_id == o[ag_id]:  # we just update other rm, since the chosen rm has been updated
-                        for u1_ in other_rm.U:
-                            l_c = env.get_mdp_label(s, s_new)
-                            u2_ = other_rm.get_next_state(u1_, l_c)
-                            r = other_rm.get_reward(u1_, u2_)
-                            agent.update_q_function(rm_id,
-                                                    s=s[ag_id],
-                                                    s_new=s_new[ag_id],
-                                                    u=u1_,
-                                                    u_new=u2_,
-                                                    a=a[ag_id],
-                                                    reward=r,
-                                                    learning_params=learning_params)
             # Update step count
             tau += 1
             steps += 1
@@ -105,6 +103,8 @@ def run_qlearning_task(epsilon,
             is_state_changed = controller.update_controller(l)  # update_controller(l) return a boolean
             if (steps >= num_steps) or tester.start_test() or is_state_changed:
                 break
+            if env.reward_machine.is_terminal_state(env.u):
+                pass
 
         ################ option has been completed ######################
         # update Q-function of the controller
@@ -132,7 +132,7 @@ def run_qlearning_task(epsilon,
                 agent_list_copy.append(agent_copy)
             controller_copy = High_Controller(tester.rm_test_file, controller.num_rm_list, agent_list_copy)
             controller_copy.q = controller.q
-            # Run a test of the performance of the agents`
+            # Run a test of the performance of the agents
             testing_reward, trajectory, testing_steps = run_test(controller_copy,
                                                                  agent_list_copy,
                                                                  tester,
@@ -167,7 +167,6 @@ def run_qlearning_task(epsilon,
         # If each agent has completed its task, reset it to its initial state.
         if all(agent.is_task_complete for agent in agent_list):
             for i in range(num_agents):
-                agent_list[i].reset_state()
                 agent_list[i].initialize_reward_machine()
 
             # Make sure we've run at least the minimum number of training steps before breaking the loop

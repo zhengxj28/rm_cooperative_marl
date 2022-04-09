@@ -205,7 +205,7 @@ class MultiAgentMineCraft2Env:
         self.event_set_of_agents = dict()
         for ag_id in range(self.num_agents):
             event_set_of_ag_i = set()
-            event_set_of_ag_i.add(('',))  # empty event, represented as a tuple
+            event_set_of_ag_i.add(tuple())  # empty event, represented as a tuple
             for p in propositions:
                 event_set_of_ag_i.add((p + str(ag_id + 1),))  # in this env, each agent cover at most one character
             if self.consider_night:
@@ -447,17 +447,17 @@ class MultiAgentMineCraft2Env:
             MDP label resulting from the state transition.
         """
 
-        event_set = set()  # event set without agent id
-        event_set_ag = set()  # event set with agent id
-        event_set_space = set()  # event set with ' ', for debug only
+        event_set = set()  # event set without agent id, e.g. {'', 'a','b'}
+        event_set_ag = set()  # event set with agent id, e.g. {'a1', 'b2'}
+        event_set_space = set()  # empty event is represented as ' ', for debug only
         for i in range(self.num_agents):
             row_i, col_i = self.state2pos(s_next[i])  # position of agent i
             proposition = str(self.back_map[row_i][col_i])
             if proposition == 'A' or proposition == ' ':
-                proposition = ''  # empty event, represented by empty string
+                # proposition = ''  # empty event, represented by empty string
                 event_set_space.add(' '+str(i+1))
-            event_set.add(proposition)
-            if len(proposition) > 0:
+            else:
+                event_set.add(proposition)
                 proposition = proposition + str(i + 1)  # add subscript
                 event_set_ag.add(proposition)
         if self.consider_night and self._is_night():
