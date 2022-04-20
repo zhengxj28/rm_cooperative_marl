@@ -61,25 +61,7 @@ def run_qlearning_task(epsilon,
             for ag_id in range(num_agents):
                 agent = agent_list[ag_id]
 
-                # update currently chosen rm of this agent
-                # u1 = agent.u
-                # u2 = agent.rm.get_next_state(u1, l)
-                # r_ag = agent.rm.get_reward(u1, u2)  # reward of current RM state from current chosen rm
                 agent.update_agent(label=l)  # update RM state of this agent
-                # update Q-functions of chosen rm
-                # for u1_ in agent.rm.U:
-                #     if u1_ not in agent.rm.T:
-                #         l_c = env.get_mdp_label(s, s_new)  # counterfactual label
-                #         u2_ = agent.rm.get_next_state(u1_, l_c)
-                #         r_c = agent.rm.get_reward(u1_, u2_)
-                #         agent.update_q_function(agent.rm_id,
-                #                                 s=s[ag_id],
-                #                                 s_new=s_new[ag_id],
-                #                                 u=u1_,
-                #                                 u_new=u2_,
-                #                                 a=a[ag_id],
-                #                                 reward=r_c,
-                #                                 learning_params=learning_params)
 
                 # update all the Q-functions of all RMs of this agent
                 for rm_id in range(agent.num_rms):

@@ -3,6 +3,7 @@ from src.tester.tester import Tester
 import numpy as np
 import random, time, os, math
 import matplotlib.pyplot as plt
+import torch
 
 
 class Agent:
@@ -18,14 +19,14 @@ class Agent:
     self.initialize_reward_machine().
     """
 
-    def __init__(self, rm_file_name, s_i, num_states, actions, agent_id):
+    def __init__(self, local_event_set, num_states, actions, agent_id):
         """
         Initialize agent object.
 
         Parameters
         ----------
-        rm_file : str
-            File path pointing to the reward machine this agent is meant to use for learning.
+        local_event_set : set
+            The set of possible events of this agent.
         s_i : int
             Index of initial state.
         actions : list
@@ -33,31 +34,40 @@ class Agent:
         agent_id : int
             Index of this agent.
         """
-        self.rm_file_name = rm_file_name
+
         self.agent_id = agent_id
-        self.s_i = s_i
-        self.s = s_i
         self.actions = actions
+        self.num_actions = len(actions)
         self.num_states = num_states
+        self.local_event_set = local_event_set
+        self.local_propositions = set()
 
         self.avail_rms = []  # available rms of this agent
-        max_rm_num = 10
-        for i in range(max_rm_num):
-            rm_file = self.rm_file_name + '_' + str(i + 1) + '.txt'
-            if os.path.exists(rm_file):
-                self.avail_rms.append(SparseRewardMachine(rm_file))
-            else:
-                break
+        self.event2rm_id = dict()  # dict: convert event to rm_id
+        for event in self.local_event_set:
+            self.local_propositions = self.local_propositions.union(set(event))
+
+        # the sub-rm is automatically constructed
+        rm_id = 0
+        for event in self.local_event_set:
+            rm = SparseRewardMachine()
+            rm.build_atom_rm(event, self.local_propositions, self.local_event_set)
+            self.avail_rms.append(rm)
+            self.event2rm_id[event] = rm_id
+            rm_id += 1
+        self.rm_id2event = dict()  # dict: convert rm_id to event
+        for event, rm_id in self.event2rm_id.items():
+            self.rm_id2event[rm_id] = event
+
         self.num_rms = len(self.avail_rms)
 
         self.rm_id = 0  # id of current chosen rm
         self.rm = self.avail_rms[self.rm_id]  # current chosen rm
         self.u = self.rm.get_initial_state()
-        self.local_event_set = self.rm.get_propositions()
 
         num_states_of_avail_rm = np.array([len(rm_.U) for rm_ in self.avail_rms])
-        max_num_states = num_states_of_avail_rm.max()
-        self.q = np.zeros([self.num_rms, num_states, max_num_states, len(self.actions)])
+        max_rm_states = num_states_of_avail_rm.max()
+        self.q = np.zeros([self.num_rms, num_states, max_rm_states, len(self.actions)])
         self.total_local_reward = 0
         self.is_task_complete = 0
 
@@ -66,12 +76,6 @@ class Agent:
         self.u = self.avail_rms[rm_id].u0
         self.is_task_complete = self.rm.is_terminal_state(self.u)
         self.rm_id = rm_id
-
-    def reset_state(self):
-        """
-        Reset the agent to the initial state of the environment.
-        """
-        self.s = self.s_i
 
     def initialize_reward_machine(self):
         """
@@ -87,14 +91,12 @@ class Agent:
         else:
             return False
 
-    def get_next_action(self, epsilon, learning_params):
+    def get_next_action(self, s, epsilon, learning_params):
         """
         Return the action next action selected by the agent.
 
         Outputs
         -------
-        s : int
-            Index of the agent's current state.
         a : int
             Selected next action for this agent.
         """
@@ -102,38 +104,26 @@ class Agent:
         T = learning_params.T
 
         if random.random() < epsilon:
-            a = random.choice(self.actions)
-            a_selected = a
+            # a = random.choice(self.actions)
+            weight = np.ones([self.num_actions])
         else:
-            pr_sum = np.sum(np.exp(self.q[self.rm_id, self.s, self.u, :] * T))
-            pr = np.exp(self.q[self.rm_id, self.s, self.u, :] * T) / pr_sum  # pr[a] is probability of taking action a
+            weight = np.exp(self.q[self.rm_id, s, self.u, :] * T)
+        pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
 
-            # If any q-values are so large that the softmax function returns infinity,
-            # make the corresponding actions equally likely
-            if any(np.isnan(pr)):
-                print('BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
-                temp = np.array(np.isnan(pr), dtype=float)
-                pr = temp / np.sum(temp)
+        # If any q-values are so large that the softmax function returns infinity,
+        # make the corresponding actions equally likely
+        if any(np.isnan(pr)):
+            print('BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
+            temp = np.array(np.isnan(pr), dtype=float)
+            pr = temp / np.sum(temp)
 
-            pr_select = np.zeros(len(self.actions) + 1)
-            pr_select[0] = 0
-            for i in range(len(self.actions)):
-                pr_select[i + 1] = pr_select[i] + pr[i]
+        pr = torch.tensor(pr)
+        dist = torch.distributions.Categorical(pr)
+        a = dist.sample()
 
-            randn = random.random()
-            for a in self.actions:
-                if randn >= pr_select[a] and randn <= pr_select[a + 1]:
-                    a_selected = a
-                    break
+        return a
 
-            # best_actions = np.where(self.q[self.s, self.u, :] == np.max(self.q[self.s, self.u, :]))[0]
-            # a_selected = random.choice(best_actions)
-
-        a = a_selected
-
-        return self.s, a
-
-    def update_agent(self, s_new, a, reward, label, learning_params, update_q_function=True):
+    def update_agent(self, label):
         """
         Update the agent's state, q-function, and reward machine after
         interacting with the environment.
@@ -153,18 +143,8 @@ class Agent:
         """
 
         # Keep track of the RM location at the start of the
-        u_start = self.u
-
         u2 = self.rm.get_next_state(self.u, label)
         self.u = u2
-
-        self.total_local_reward += reward
-
-        if update_q_function:
-            self.update_q_function(self.rm_id, self.s, s_new, u_start, self.u, a, reward, learning_params)
-
-        # Moving to the next state
-        self.s = s_new
 
         if self.rm.is_terminal_state(self.u):
             # Completed task. Set flag.
@@ -201,7 +181,7 @@ class Agent:
         else:
             # Bellman update
             self.q[rm_id][s][u][a] = (1 - alpha) * self.q[rm_id][s][u][a] \
-                                 + alpha * (reward + gamma * np.amax(self.q[rm_id][s_new][u_new]))
+                                     + alpha * (reward + gamma * np.amax(self.q[rm_id][s_new][u_new]))
 
 
 class High_Controller:
@@ -210,16 +190,14 @@ class High_Controller:
     subtask (rm) properly to complete the whole team task efficiently.
     """
 
-    def __init__(self, rm_file_name, num_rm_list):
+    def __init__(self, rm_file_name, num_rm_list, agent_list):
         """
         Initialize agent object.
 
         Parameters
         ----------
-        rm_file : str
+        rm_file_name : str
             File path pointing to the reward machine of team task.
-        num_agents: int
-            The number of agents.
         num_rm_list : list
             Num of available rm of each agent,
         """
@@ -227,20 +205,35 @@ class High_Controller:
         self.rm = SparseRewardMachine(self.rm_file_name)
 
         self.u = self.rm.get_initial_state()
-        self.local_event_set = self.rm.get_propositions()
+        self.local_propositions = self.rm.get_propositions()
 
         self.num_agents = len(num_rm_list)
         self.num_rm_list = num_rm_list
 
-        # Create a list of the dimension of high-level q-function
-        # Let N be num_agents, O_i is num_rm of agent i, then the shape is UxO1X...XON
-        # each option is the rm tuple of agents: o=(rm1,rm2,...,rmN)
-        q_shape = [len(self.rm.U),] + num_rm_list
-        # self.q = np.zeros(q_shape)
-        self.q = np.ones(q_shape)
+        """
+        Create a list of the dimension of high-level q-function
+        Let N be num_agents, O_i is num_rm of agent i, then the shape is UxO1X...XON
+        each option is the rm tuple of agents: o=(rm1,rm2,...,rmN)
+        """
+        q_shape = [len(self.rm.U), ] + num_rm_list
+        self.q = np.zeros(q_shape)  # for softmax selection
+        # self.q = np.ones(q_shape)  # for epsilon-greedy
         self.num_options = self.q[0].size  # number of all possible options
-        # self.total_local_reward = 0
         self.is_task_complete = 0
+
+        # action_mask_matrix[u][o]=1 iff option o causes rm transit to another state u'!=u
+        # action_mask_matrix[u][o]=1 iff rm does not transit to another state
+        self.action_mask_matrix = np.ones(q_shape, dtype=int)
+        for u in self.rm.U:
+            for o_index in range(self.num_options):
+                o = np.unravel_index(o_index, self.num_rm_list)
+                events = set()  # events of all agent under option o
+                for ag_id in range(self.num_agents):
+                    local_event = set(agent_list[ag_id].rm_id2event[o[ag_id]])
+                    events = events.union(local_event)
+                events = tuple(sorted(list(events)))
+                if self.rm.get_next_state(u, events) == u:
+                    self.action_mask_matrix[u][o] = 0
 
     def initialize_reward_machine(self):
         """
@@ -268,39 +261,35 @@ class High_Controller:
             Selected next action for this agent.
         """
 
-        T = learning_params.T
+        T = learning_params.T_controller  # temperature of softmax
         if random.random() < epsilon:
-            o = []
-            for i in range(self.num_agents):
-                o.append(random.choice([id for id in range(self.num_rm_list[i])]))
+            weight = np.ones(self.num_rm_list)
+            # o = []
+            # for i in range(self.num_agents):
+            #     o.append(random.choice([id for id in range(self.num_rm_list[i])]))
         else:
             # epsilon-greedy implementation
-            o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
+            # o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
 
             # softmax implementation
-            # pr_sum = np.sum(np.exp(self.q[self.u, :] * T))
-            # pr = np.exp(self.q[self.u, :] * T) / pr_sum  # pr[a] is probability of taking action a
-            # pr = np.reshape(pr, [pr.size])  # reshape to 1d array
-            # # If any q-values are so large that the softmax function returns infinity,
-            # # make the corresponding actions equally likely
-            # if any(np.isnan(pr)):
-            #     print('BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
-            #     temp = np.array(np.isnan(np.reshape(pr, [pr.size])), dtype=float)
-            #     pr = temp / np.sum(temp)
-            #
-            # # pr = np.reshape(pr, self.num_rm_list)
-            # pr_select = np.zeros(self.num_options + 1)
-            # pr_select[0] = 0
-            # for i in range(self.num_options):
-            #     pr_select[i + 1] = pr_select[i] + pr[i]
-            #
-            # randn = random.random()
-            # selected_i = 0
-            # for i in range(self.num_options):
-            #     if randn >= pr_select[i] and randn <= pr_select[i + 1]:
-            #         selected_i = i
-            #         break
-            # o = np.unravel_index(selected_i, self.num_rm_list)
+            weight = np.exp(self.q[self.u, :] * T)
+
+        # action mask, eliminate forbidden option
+        weight = np.multiply(weight, self.action_mask_matrix[self.u, :])
+
+        pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
+        pr = np.reshape(pr, [pr.size])  # reshape to 1d array
+        # If any q-values are so large that the softmax function returns infinity,
+        # make the corresponding actions equally likely
+        if any(np.isnan(pr)):
+            print('GET OPTION: BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
+            temp = np.array(np.isnan(np.reshape(pr, [pr.size])), dtype=float)
+            pr = temp / np.sum(temp)
+
+        pr = torch.tensor(pr)
+        dist = torch.distributions.Categorical(pr)
+        o = dist.sample()
+        o = np.unravel_index(o, self.num_rm_list)
 
         return list(o)
 
@@ -348,8 +337,17 @@ class High_Controller:
         o = tuple(o)
         u_new = self.u
         if self.rm.is_terminal_state(u_new):
-            self.q[u_start][o] = (1 - alpha) * self.q[u_start][o] + alpha*G
+            self.q[u_start][o] = (1 - alpha) * self.q[u_start][o] + alpha * G
         else:
             # Bellman update
-            self.q[u_start][o] = (1 - alpha) * self.q[u_start][o]\
-                           + alpha * (G + math.pow(gamma, tau) * self.q[u_new].max())
+            self.q[u_start][o] = (1 - alpha) * self.q[u_start][o] \
+                                 + alpha * (G + math.pow(gamma, tau) * self.q[u_new].max())
+
+
+if __name__ == '__main__':  # for debug only
+    local_event_set = {'', 'a', 'b', 'c', 'd', 'r', ('c', 'r'), ('d', 'r')}
+    test_agent = Agent(local_event_set=local_event_set,
+                       num_states=100,
+                       actions=[0, 1, 2, 3, 4],
+                       agent_id=0)
+    print()

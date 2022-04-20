@@ -4,6 +4,7 @@ from src.Environments.buttons.multi_agent_buttons_env import MultiAgentButtonsEn
 # from src.Environments.rendezvous.multi_agent_gridworld_env import MultiAgentGridWorldEnv
 from src.Environments.minecraft.minecraft_env import MultiAgentMineCraftEnv
 from src.Environments.minecraft2.minecraft2_env import MultiAgentMineCraft2Env
+from src.Environments.pass_room.pass_room_env import PassRoomEnv
 
 
 def load_testing_env(tester):
@@ -16,6 +17,8 @@ def load_testing_env(tester):
         testing_env = MultiAgentMineCraftEnv(tester.rm_test_file, tester.env_settings)
     elif tester.experiment == 'minecraft2':
         testing_env = MultiAgentMineCraft2Env(tester.rm_test_file, tester.env_settings)
+    elif tester.experiment == 'pass_room':
+        testing_env = PassRoomEnv(tester.rm_test_file, tester.env_settings)
     else:
         raise ValueError('No such environment: ' + tester.experiment)
 

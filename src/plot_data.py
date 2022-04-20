@@ -84,15 +84,16 @@ if __name__ == "__main__":
     # plot_data('20211125', env_name, map_name, 'navigation_same_rm', 'cqrm', 'blue')
 
     # env_name = 'minecraft2'
-    # map_name = 'nav_map2'
+    # map_name = 'nav_map1'
     # title = '{}_{}'.format(env_name, map_name)
     # plt.title(title)
     # plot_data('20211125', env_name, map_name, 'navigation', 'dqprm', 'green')
     # plot_data('20211125', env_name, map_name, 'navigation_complex_rm', 'iqrm', 'purple')
     # # plot_data(date, env_name, map_name, 'navigation_complex_rm_rs', 'iqrm', 'blue')
-    # plot_data('20211125', env_name, map_name, 'navigation_complex_rm', 'cqrm', 'blue')
+    # # plot_data('20211125', env_name, map_name, 'navigation_complex_rm', 'cqrm', 'blue')
     # plot_data('20211126', env_name, map_name, 'navigation_good_p', 'dqprm', 'red')
     # plot_data('20211206', env_name, map_name, 'navigation', 'hie_iqrm', 'yellow')
+    # plot_data('20220410', env_name, map_name, 'navigation', 'hie_iqrm2', 'blue')
 
     # env_name = 'minecraft2'
     # map_name = '3A_map_0'
@@ -105,6 +106,7 @@ if __name__ == "__main__":
     # plot_data('20211210', env_name, map_name, 'task5', 'dqprm', 'green')
     # plot_data('20211210', env_name, map_name, 'task5', 'iqrm', 'purple')
     # plot_data('20211210', env_name, map_name, 'task5', 'hie_iqrm', 'yellow')
+    # plot_data('20220410', env_name, map_name, 'task5', 'hie_iqrm2', 'blue')
 
     # plot_data('20211210', env_name, map_name, 'task6', 'dqprm', 'green')
     # plot_data('20211210', env_name, map_name, 'task6', 'iqrm', 'purple')
@@ -118,13 +120,35 @@ if __name__ == "__main__":
     # plot_data('20211213', env_name, map_name, 'task2', 'iqrm', 'purple')
     # plot_data('20211213', env_name, map_name, 'task2', 'hie_iqrm', 'yellow')
 
-    env_name = 'minecraft2'
-    map_name = 'nav_map5'
-    title = '{}_{}'.format(env_name,map_name)
+    # env_name = 'minecraft2'
+    # map_name = 'nav_map5'
+    # title = '{}_{}'.format(env_name,map_name)
+    # plt.title(title)
+    # # plot_data('20211216', env_name, map_name, 'navigation', 'dqprm', 'green')
+    # plot_data('20211216', env_name, map_name, 'navigation_good_p', 'dqprm', 'red')
+    # plot_data('20211217', env_name, map_name, 'navigation', 'hie_iqrm', 'yellow')
+    # plot_data('20220410', env_name, map_name, 'navigation', 'hie_iqrm2', 'blue')
+
+    # env_name = 'pass_room'
+    # map_name = '4button3agent'
+    # title = '{}_{}'.format(env_name,map_name)
+    # plt.title(title)
+    # plot_data('20220412', env_name, map_name, 'pass', 'iqrm', 'green')
+    # plot_data('20220412', env_name, map_name, 'pass', 'hie_iqrm2', 'red')
+    # plot_data('20220412', env_name, map_name, 'pass_rs', 'iqrm', 'yellow')
+    # plot_data('20220412', env_name, map_name, 'pass_rs', 'hie_iqrm2', 'blue')
+
+    env_name = 'pass_room'
+    map_name = '4button3agent'
+    title = '{}_{}'.format(env_name, map_name)
     plt.title(title)
-    # plot_data('20211216', env_name, map_name, 'navigation', 'dqprm', 'green')
-    plot_data('20211216', env_name, map_name, 'navigation_good_p', 'dqprm', 'red')
-    plot_data('20211217', env_name, map_name, 'navigation', 'hie_iqrm', 'yellow')
+    plot_data('20220416', env_name, map_name, 'pass2', 'hie_iqrm2', 'green')
+    plot_data('20220416', env_name, map_name, 'pass2_rs', 'hie_iqrm2', 'lime')
+    plot_data('20220416', env_name, map_name, 'pass3', 'hie_iqrm2', 'red')
+    plot_data('20220416', env_name, map_name, 'pass3_rs', 'hie_iqrm2', 'orange')
+    plot_data('20220419', env_name, map_name, 'pass4', 'hie_iqrm2', 'blue')
+    plot_data('20220419', env_name, map_name, 'pass4_rs', 'hie_iqrm2', 'purple')
+
 
 
     plt.legend(loc='best')

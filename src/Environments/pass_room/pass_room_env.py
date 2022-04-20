@@ -60,6 +60,38 @@ class Obstacle(Entity):
     def __str__(self):
         return "X"
 
+class Door(Entity):
+    def __init__(self, i, j):
+        super().__init__(i, j)
+        self.is_open = False
+
+    def interact(self, agent):
+        return self.is_open
+        # return True
+
+    def open(self):
+        self.is_open = True
+
+    def close(self):
+        self.is_open = False
+
+    def __str__(self):
+        return "D"
+
+# class Button(Entity):
+#     def __init__(self, i, j, label):
+#         super().__init__(i, j)
+#         self.label = label
+#         self.is_pressed = False
+#
+#     def press_button(self):
+#         self.is_pressed = True
+#
+#     def release_button(self):
+#         self.is_pressed = False
+#
+#     def __str__(self):
+#         return self.label
 
 class Empty(Entity):
     def __init__(self, i, j, label=" "):
@@ -79,13 +111,12 @@ class Actions(Enum):
 
 
 ########### env definition ###############
-class MineCraftParams:
-    def __init__(self, file_map, consider_night):
-        self.file_map = file_map
-        self.consider_night = consider_night
+# class MineCraftParams:
+#     def __init__(self, file_map, consider_night):
+#         self.file_map = file_map
+#         self.consider_night = consider_night
 
-
-class MultiAgentMineCraft2Env:
+class PassRoomEnv:
 
     def __init__(self, rm_file, env_settings):
         """
@@ -102,6 +133,7 @@ class MultiAgentMineCraft2Env:
             Dictionary of environment settings
         """
         self.env_settings = env_settings  # settings from tester
+        self.nSteps = 0
 
         self._load_map(self.env_settings['file_map'])
         self.s = self.s_i  # current states are initialized
@@ -109,14 +141,6 @@ class MultiAgentMineCraft2Env:
 
         self.u = self.reward_machine.get_initial_state()
         self.last_action = np.full(self.num_agents, -1, dtype=int)  # Initialize last action with garbage values
-
-        self.consider_night = self.env_settings['consider_night']
-        self.nSteps = 0
-        self.hour = 12
-        if self.consider_night:
-            self.sunrise = 5
-            self.sunset = 21
-
         self.p = self.env_settings['p']  # slip probability, noise action
 
     def _load_map(self, file_map):
@@ -138,60 +162,70 @@ class MultiAgentMineCraft2Env:
             [Actions.up.value, Actions.right.value, Actions.left.value, Actions.down.value, Actions.none.value],
             dtype=int)
         # loading the map
-        self.map_array = []
+        self.map = []  # a list of entity
         # I use the lower case letters to define the features
         self.class_ids = {}
-        self.agents = {}
+        self.agents = dict()
+        propositions = set()  # characters on the map, e.g. 'a','b'
+        self.door_list = []  # entity of door(s)
+
         f = open(file_map)
         i, j = 0, 0
-        ag = 0  # num of agents
+        ag_id = 0  # id of agents
+        door_pos_list = []
         for l in f:
             # I don't consider empty lines!
             if (len(l.rstrip()) == 0): continue
             # this is not an empty line!
             row = []
-            b_row = []
             j = 0
             for e in l.rstrip():
-                if e in "abcdefghijklmnopqrstuvwxyzH":
+                if e in "abcdefghijklmnopqrstuvwxyz":
                     entity = Empty(i, j, label=e)
+                    propositions.add(e)
                     if e not in self.class_ids:
                         self.class_ids[e] = len(self.class_ids)
                 # we need to declare the initial positions of agents
                 # to be potentially empty espaces (after they moved)
-                elif e in " A":
+                elif e == "A" or e == " ":
                     entity = Empty(i, j)
                 elif e == "X":
                     entity = Obstacle(i, j)
+                elif e == "D":
+                    entity = Door(i, j)
+                    # propositions.add(e)
+                    door_pos_list.append((i,j))
                 else:
                     raise ValueError('Unkown entity ', e)
                 if e == "A":
-                    self.agents[ag] = Agent(i, j, actions)
+                    self.agents[ag_id] = Agent(i, j, actions)
                     ag_init_pos.append((i, j))
                     if e not in self.class_ids:
                         self.class_ids[e] = len(self.class_ids)
-                    ag += 1
+                    ag_id += 1
                 row.append(entity)
                 j += 1
-            self.map_array.append(row)
+            self.map.append(row)
             i += 1
         """
         We use this back map to check what was there when an agent leaves a 
         position
         """
-        self.back_map = copy.deepcopy(self.map_array)
+        self.back_map = copy.deepcopy(self.map)  # background, do not include agent
+        for door_i, door_j in door_pos_list:
+            self.door_list.append(self.back_map[door_i][door_j])
         for agent in self.agents.values():
             i, j = agent.i, agent.j
-            self.map_array[i][j] = agent
+            self.map[i][j] = agent
         f.close()
+
         # height width
-        self.map_height, self.map_width = len(self.map_array), \
-                                          len(self.map_array[0])
-        self.num_agents = len(ag_init_pos)
+        self.map_height, self.map_width = len(self.map), \
+                                          len(self.map[0])
+        self.num_agents = len(self.agents)
         self.num_states = self.map_height * self.map_width
         # print("There are", self.n_agents, "agents")
         # contains all the actions that the agent can perform
-
         self.actions = np.full((self.num_agents, len(actions)), -2, dtype=int)
         for i in range(self.num_agents):
             self.actions[i] = actions
@@ -200,7 +234,23 @@ class MultiAgentMineCraft2Env:
         for i in range(self.num_agents):
             self.s_i[i] = self.pos2state(ag_init_pos[i][0], ag_init_pos[i][1])
 
-    def environment_step(self, s, a):
+        # generate event_set_of_agent[ag_id]: possible events of an agent
+        # each event is represented as a tuple
+        self.event_set_of_agents = dict()
+        for ag_id in range(self.num_agents):
+            event_set_of_ag_i = set()
+            event_set_of_ag_i.add(tuple())  # empty event, represented as a tuple
+            for p in propositions:
+                p_ag = p + str(ag_id + 1)
+                if p in ['c', 'd']:  # buttons in goal room
+                    event_set_of_ag_i.add((p_ag, 'r'+str(ag_id+1),))
+                else:
+                    event_set_of_ag_i.add((p_ag,))  # in this env, each agent cover at most one character
+            event_set_of_ag_i.add(('r'+str(ag_id+1),))
+
+            self.event_set_of_agents[ag_id] = event_set_of_ag_i
+
+    def environment_step(self, a):
         """
         Execute collective action a from collective state s. Return the resulting reward,
         mdp label, and next state. Update the last action taken by each agent.
@@ -224,39 +274,37 @@ class MultiAgentMineCraft2Env:
             Array of indeces of next team state.
         """
 
-        self.hour = (self.hour + 1) % 24
         s_next = np.full(self.num_agents, -1, dtype=int)
-
         for i in range(self.num_agents):
-            s_next[i], actual_action = self.get_next_state(self.s[i], a[i], i)
+            s_next[i], actual_action = self.get_next_state(a[i], i)
             self.last_action[i] = actual_action
 
         l = self.get_mdp_label(self.s, s_next, self.u)
-        r = 0
-
         self.s = s_next  # update env states
-        # for e in l:
-        #     # Get the new reward machine state and the reward of this step
-        #     u2 = self.reward_machine.get_next_state(self.u, e)
-        #     r = r + self.reward_machine.get_reward(self.u, u2)
-        #     # Update the reward machine state
-        #     self.u = u2
 
         u2 = self.reward_machine.get_next_state(self.u, l)
-        r = r + self.reward_machine.get_reward(self.u, u2)
+        r = self.reward_machine.get_reward(self.u, u2)
         self.u = u2
+
+        if len(set(l).intersection({'a','b','c','d'})) >= 2:  # two button pressed
+            for door in self.door_list:
+                door.open()
+        else:
+            for door in self.door_list:
+                door.close()
 
         return r, l, s_next
 
-    def get_next_state(self, s, a, agent_id):  # get next state for single agent
+    def get_state(self):
+        return self.s
+
+    def get_next_state(self, a, agent_id):  # get next state for single agent
         """
          Get the next state in the environment given action a is taken from state s.
          Update the last action that was truly taken due to MDP slip.
 
          Parameters
          ----------
-         s : int
-             Index of the current state.
          a : int
              Action to be taken from state s.
 
@@ -268,7 +316,8 @@ class MultiAgentMineCraft2Env:
              Last action the agent truly took because of slip probability.
          """
 
-        action = Actions(a)  # action = up, right, down, left, none
+        s = self.s[agent_id]
+        # action = Actions(a)  # action = up, right, down, left, none
         slip_p = [self.p, (1 - self.p) / 2, (1 - self.p) / 2]
         check = random.random()
 
@@ -313,11 +362,13 @@ class MultiAgentMineCraft2Env:
         if action_ == Actions.right:
             col += 1
 
-        if self.map_array[row][col].interact(agent_id):  # not obstacle
+        # entity_old = self.back_map[row_old][col_old]  # reference, not deep copy
+        entity = self.back_map[row][col]
+        if entity.interact(agent_id):  # not obstacle
             s_next = self.pos2state(row, col)
             self.agents[agent_id].change_position(row, col)
-            self.map_array[row_old][col_old] = self.back_map[row_old][col_old]
-            self.map_array[row][col] = self.agents[agent_id]
+            self.map[row_old][col_old] = self.back_map[row_old][col_old]
+            self.map[row][col] = self.agents[agent_id]
         else:
             s_next = s
 
@@ -345,7 +396,7 @@ class MultiAgentMineCraft2Env:
         """
 
         """
-        width=5 example
+        an example of map_width=5 
         01234
         56789
         .....
@@ -412,7 +463,7 @@ class MultiAgentMineCraft2Env:
         """
         return np.copy(self.s_i)
 
-    ############## DQPRM-RELATED METHODS ########################################
+    ############## RM-RELATED METHODS ########################################
     def get_mdp_label(self, s, s_next, u=0):
         """
         Get the mdp label resulting from transitioning from state s to state s_next.
@@ -434,150 +485,21 @@ class MultiAgentMineCraft2Env:
             MDP label resulting from the state transition.
         """
 
-        event_set = set()  # event set without agent id
-        event_set_ag = set()  # event set with agent id
+        event_set = set()  # event set without agent id, e.g. {'', 'a','b'}
+        event_set_ag = set()  # event set with agent id, e.g. {'a1', 'b2'}
         for i in range(self.num_agents):
             row_i, col_i = self.state2pos(s_next[i])  # position of agent i
-            event = str(self.back_map[row_i][col_i])
-            if event == 'A': event = ' '
-            event_set.add(event)
-            event_ag = event + str(i+1)
-            event_set_ag.add(event_ag)
-        if self.consider_night and self._is_night():
-            event_set_ag.add('n')
-        return list(event_set)+list(event_set_ag)
-
-    ################## HRL-RELATED METHODS ######################################
-    # def get_options_list(self, agent_id):
-    #     """
-    #     Return a list of strings representing the possible options for each agent.
-    #
-    #     Input
-    #     -----
-    #     agent_id : int
-    #         The id of the agent whose option list is to be returned.
-    #
-    #     Output
-    #     ------
-    #     options_list : list
-    #         list of strings representing the options avaialble to the agent.
-    #     """
-    #
-    #     agent1 = 0
-    #     agent2 = 1
-    #     agent3 = 2
-    #
-    #     options_list = []
-    #
-    #     return options_list
-    #
-    # def get_avail_options(self, agent_id):
-    #     """
-    #     Given the current metastate, get the available options. Some options are unavailable if
-    #     they are not possible to complete at the current stage of the task. In such circumstances
-    #     we don't want the agents to update the corresponding option q-functions.
-    #     """
-    #     agent1 = 0
-    #     agent2 = 1
-    #     agent3 = 2
-    #
-    #     avail_options = []
-    #
-    #     return avail_options
-    #
-    # def get_avail_meta_action_indeces(self, agent_id):
-    #     """
-    #     Get a list of the indeces corresponding to the currently available meta-action/option
-    #     """
-    #     avail_options = self.get_avail_options(agent_id)
-    #     all_options_list = self.get_options_list(agent_id)
-    #     avail_meta_action_indeces = []
-    #     for option in avail_options:
-    #         avail_meta_action_indeces.append(all_options_list.index(option))
-    #     return avail_meta_action_indeces
-    #
-    # def get_completed_options(self, s):
-    #     """
-    #     Get a list of strings corresponding to options that are deemed complete in the team state described by s.
-    #
-    #     Parameters
-    #     ----------
-    #     s : numpy integer array
-    #         Array of integers representing the environment states of the various agents.
-    #         s[id] represents the state of the agent indexed by index "id".
-    #
-    #     Outputs
-    #     -------
-    #     completed_options : list
-    #         list of strings corresponding to the completed options.
-    #     """
-    #     agent1 = 0
-    #     agent2 = 1
-    #     agent3 = 2
-    #
-    #     completed_options = []
-    #
-    #     for i in range(self.num_agents):
-    #         row, col = self.state2pos(s[i])
-    #
-    #         if i == agent1:
-    #             if (row, col) == self.env_settings['yellow_button']:
-    #                 completed_options.append('by')
-    #             if (row, col) == self.env_settings['goal_location']:
-    #                 completed_options.append('g')
-    #             if s[i] == self.env_settings['initial_states'][i]:
-    #                 completed_options.append('w1')
-    #
-    #         elif i == agent2:
-    #             if (row, col) == self.env_settings['green_button']:
-    #                 completed_options.append('bg')
-    #             if (row, col) == self.env_settings['red_button']:
-    #                 completed_options.append('a2br')
-    #             if s[i] == self.env_settings['initial_states'][i]:
-    #                 completed_options.append('w2')
-    #
-    #         elif i == agent3:
-    #             if (row, col) == self.env_settings['red_button']:
-    #                 completed_options.append('a3br')
-    #             if s[i] == self.env_settings['initial_states'][i]:
-    #                 completed_options.append('w3')
-    #
-    #     return completed_options
-    #
-    # def get_meta_state(self, agent_id):
-    #     """
-    #     Return the meta-state that the agent should use for it's meta controller.
-    #
-    #     Input
-    #     -----
-    #     s_team : numpy array
-    #         s_team[i] is the state of agent i.
-    #     agent_id : int
-    #         Index of agent whose meta-state is to be returned.
-    #
-    #     Output
-    #     ------
-    #     meta_state : int
-    #         Index of the meta-state.
-    #     """
-    #     # Convert the Truth values of which buttons have been pushed to an int
-    #     meta_state = int(
-    #         '{}{}{}'.format(int(self.red_button_pushed), int(self.green_button_pushed), int(self.yellow_button_pushed)),
-    #         2)
-    #
-    #     # # if the task has been failed, return 8
-    #     # if self.u == 6:
-    #     #     meta_state = 8
-    #
-    #     # meta_state = self.u
-    #
-    #     return meta_state
-    #
-    # def get_num_meta_states(self, agent_id):
-    #     """
-    #     Return the number of meta states for the agent specified by agent_id.
-    #     """
-    #     return int(8)  # how many different combinations of button presses are there
+            proposition = str(self.back_map[row_i][col_i])
+            if proposition == 'A' or proposition == ' ':
+                pass
+            else:
+                event_set.add(proposition)
+                proposition = proposition + str(i + 1)  # add subscript
+                event_set_ag.add(proposition)
+            if col_i > 11:  # reach the goal room
+                event_set_ag.add('r'+str(i+1))
+        return list(event_set) + list(event_set_ag)
+        # return list(event_set_ag)
 
     ######################### TROUBLESHOOTING METHODS ################################
     def _get_map_str(self):
@@ -589,7 +511,7 @@ class MultiAgentMineCraft2Env:
                 if agent.idem_position(i, j):
                     s += str(agent)
                 else:
-                    s += str(self.map_array[i][j])
+                    s += str(self.map[i][j])
             if (i > 0):
                 r += "\n"
             r += s
@@ -604,11 +526,10 @@ class MultiAgentMineCraft2Env:
 
 def play(map_name, task_name):
     parentDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir, os.pardir))
-    rm_string = os.path.join(parentDir, 'reward_machines', 'minecraft2', map_name, task_name+'team.txt')
+    rm_string = os.path.join(parentDir, 'reward_machines', 'pass_room', map_name, task_name + 'team.txt')
     env_settings = {'p': 0.98,
-                    'file_map': os.path.abspath(os.path.join(os.getcwd(), 'maps', map_name+'.txt')),
-                    'consider_night': False}
-    game = MultiAgentMineCraft2Env(rm_string, env_settings)
+                    'file_map': os.path.abspath(os.path.join(os.getcwd(), 'maps', map_name + '.txt'))}
+    game = PassRoomEnv(rm_string, env_settings)
     n = game.num_agents
     # User inputs
     str_to_action = {"w": Actions.up.value, "d": Actions.right.value, "s": Actions.down.value, "a": Actions.left.value,
@@ -635,10 +556,10 @@ def play(map_name, task_name):
                 # print(str_to_action[usr_inp])
                 a[i] = str_to_action[usr_inp]
 
-        r, l, s = game.environment_step(s, a)
+        r, l, s = game.environment_step(a)
 
         print("---------------------")
-        print("Next States: ", s)
+        print("Next States: ", s, " Agent 1:", game.state2pos(s[0]))
         print("Label: ", l)
         print("Reward: ", r)
         print("RM state: ", game.u)

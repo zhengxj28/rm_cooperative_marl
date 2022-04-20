@@ -286,42 +286,10 @@ class High_Controller:
         #     # epsilon-greedy implementation
         #     o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
 
-            # softmax implementation
-            # pr_sum = np.sum(np.exp(self.q[self.u, :] * T))
-            # pr = np.exp(self.q[self.u, :] * T) / pr_sum  # pr[a] is probability of taking action a
-            # pr = np.reshape(pr, [pr.size])  # reshape to 1d array
-            # # If any q-values are so large that the softmax function returns infinity,
-            # # make the corresponding actions equally likely
-            # if any(np.isnan(pr)):
-            #     print('BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
-            #     temp = np.array(np.isnan(np.reshape(pr, [pr.size])), dtype=float)
-            #     pr = temp / np.sum(temp)
-            #
-            # # pr = np.reshape(pr, self.num_rm_list)
-            # pr_select = np.zeros(self.num_options + 1)
-            # pr_select[0] = 0
-            # for i in range(self.num_options):
-            #     pr_select[i + 1] = pr_select[i] + pr[i]
-            #
-            # randn = random.random()
-            # selected_i = 0
-            # for i in range(self.num_options):
-            #     if randn >= pr_select[i] and randn <= pr_select[i + 1]:
-            #         selected_i = i
-            #         break
-            # o = np.unravel_index(selected_i, self.num_rm_list)
-
-
         T = learning_params.T_controller  # temperature of softmax
         if random.random() < epsilon:
             weight = np.ones(self.num_rm_list)
-            # o = []
-            # for i in range(self.num_agents):
-            #     o.append(random.choice([id for id in range(self.num_rm_list[i])]))
         else:
-            # epsilon-greedy implementation
-            # o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
-
             # softmax implementation
             weight = np.exp(self.q[self.u, :] * T)
 

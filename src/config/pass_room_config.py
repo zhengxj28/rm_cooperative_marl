@@ -4,7 +4,7 @@ from src.tester.learning_params import LearningParameters
 import os
 
 
-def minecraft2_config(num_times, task_name, map_name):
+def pass_room_config(num_times, task_name, map_name):
     """
     Function setting the experiment parameters and environment.
 
@@ -17,17 +17,17 @@ def minecraft2_config(num_times, task_name, map_name):
     max_num_agents = 5
     base_file_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 
-    joint_rm_file = os.path.join(base_file_path, 'reward_machines', 'minecraft2', map_name, task_name + 'team.txt')
+    joint_rm_file = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name, task_name + 'team.txt')
 
     local_rm_files = []
     for i in range(max_num_agents):
-        local_rm_string = os.path.join(base_file_path, 'reward_machines', 'minecraft2', map_name,
+        local_rm_string = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name,
                                        task_name + 'agent%d.txt' % (i + 1))
         local_rm_files.append(local_rm_string)
 
     local_rm_files_name = []  # remove '.txt'
     for i in range(max_num_agents):
-        local_rm_string = os.path.join(base_file_path, 'reward_machines', 'minecraft2', map_name,
+        local_rm_string = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name,
                                        task_name + 'agent%d' % (i + 1))
         local_rm_files_name.append(local_rm_string)
 
@@ -41,8 +41,8 @@ def minecraft2_config(num_times, task_name, map_name):
 
     # configuration of learning params
     learning_params = LearningParameters()
-    learning_params.gamma = 0.9
-    learning_params.gamma_controller = 0.9
+    learning_params.gamma = 0.95
+    learning_params.gamma_controller = 0.95
     learning_params.alpha = 0.1
     learning_params.alpha_controller = 0.1
     learning_params.T = 50
@@ -67,13 +67,12 @@ def minecraft2_config(num_times, task_name, map_name):
     env_settings = dict()
 
     parentDir = os.path.abspath(os.path.join(os.getcwd()))
-    env_settings['file_map'] = os.path.join(parentDir, 'Environments', 'minecraft2', 'maps', map_name + '.txt')
+    env_settings['file_map'] = os.path.join(parentDir, 'Environments', 'pass_room', 'maps', map_name + '.txt')
 
-    env_settings['consider_night'] = False
     env_settings['p'] = 0.98
 
     tester.env_settings = env_settings
 
-    tester.experiment = 'minecraft2'
+    tester.experiment = 'pass_room'
 
     return tester
