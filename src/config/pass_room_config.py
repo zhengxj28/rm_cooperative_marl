@@ -52,8 +52,8 @@ def pass_room_config(num_times, task_name, map_name):
 
     tester = Tester(learning_params, testing_params)
     tester.step_unit = step_unit
-    tester.total_steps = 2000 * step_unit
-    # tester.total_steps = 10 * step_unit  # for debug only
+    # tester.total_steps = 2000 * step_unit
+    tester.total_steps = 1 * step_unit  # for debug only
     tester.min_steps = 1
     tester.max_option_length = 200
 

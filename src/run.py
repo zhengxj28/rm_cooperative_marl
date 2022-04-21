@@ -10,7 +10,7 @@ show_trajectory = False
 if __name__ == "__main__":
     random.seed(0)
     start_time = time.time()
-    independent_trail_times = 10  # Number of separate trials to run the algorithm for
+    independent_trail_times = 1  # Number of separate trials to run the algorithm for
     # num_agents = 3  # This will be automatically set to 3 for buttons experiment (max 10)
 
     # env_name='buttons'
@@ -39,8 +39,8 @@ if __name__ == "__main__":
     # task_name = 'navigation_good_p'  # using good rm projection, telling each agent what to do
 
     env_name = 'pass_room'
-    # map_name = '4button3agent'
-    map_name = '8button5agent'
+    map_name = '4button3agent'
+    # map_name = '8button5agent'
     # task_name = 'pass'
     # task_name = 'pass_rs'
     # task_name = 'pass_rs2'
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     parentDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
     now = datetime.now()
 
-    data_path = os.path.join(parentDir, 'data')
+    data_path = os.path.join(parentDir, os.pardir, 'rm_cooperative_marl_data')
     if not os.path.isdir(data_path):
         os.mkdir(data_path)
 

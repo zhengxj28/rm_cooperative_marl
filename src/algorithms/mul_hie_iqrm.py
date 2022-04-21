@@ -299,7 +299,7 @@ def run_mul_hie_iqrm_experiment(tester,
         print('Finished iteration ', trail_id, 'Running time %.4f s per %d steps' % (step_time, tester.step_unit))
 
     # tester.agent_list = agent_list
-    #
+
     # # plot_multi_agent_results(tester, num_agents)
     # plot_multi_agent_results(tester.results['testing_steps'], num_agents)
 
