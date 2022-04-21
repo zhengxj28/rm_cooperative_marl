@@ -38,16 +38,20 @@ if __name__ == "__main__":
     # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection,
     # task_name = 'navigation_good_p'  # using good rm projection, telling each agent what to do
 
-    # env_name, task_name, map_name = 'pass_room', 'pass', '4button3agent'
-    # env_name, task_name, map_name = 'pass_room', 'pass_rs', '4button3agent'
-    # env_name, task_name, map_name = 'pass_room', 'pass_rs2', '4button3agent'
-    # env_name, task_name, map_name = 'pass_room', 'pass2', '4button3agent'
-    # env_name, task_name, map_name = 'pass_room', 'pass2_rs', '4button3agent'
-    # env_name, task_name, map_name = 'pass_room', 'pass3', '4button3agent'
-    # env_name, task_name, map_name = 'pass_room', 'pass3_rs', '4button3agent'
-    # env_name, task_name, map_name = 'pass_room', 'pass4', '4button3agent'
-    env_name, task_name, map_name = 'pass_room', 'pass4_rs', '4button3agent'
+    env_name = 'pass_room'
+    # map_name = '4button3agent'
+    map_name = '8button5agent'
+    # task_name = 'pass'
+    # task_name = 'pass_rs'
+    # task_name = 'pass_rs2'
+    # task_name = 'pass2'
+    # task_name = 'pass2_rs'
+    # task_name = 'pass3'
+    # task_name = 'pass3_rs'
+    # task_name = 'pass4'
+    task_name = 'pass4_rs'
 
+    ################## decide which algorithm to run ###############################
     # alg_name= 'cqrm'  # centralized qrm
     # alg_name = 'dqprm_s'  # decentralized q-learning for projected rm, source code
     # alg_name = 'ihrl'
@@ -55,8 +59,8 @@ if __name__ == "__main__":
     # alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
     # alg_name = 'iqrm'  # independent qrm
     # alg_name = 'hie_iqrm'  # hierarchical iqrm
-    # alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
-    alg_name = 'mul_hie_iqrm'  # multi-level hierarchical iqrm with option elimination & sub-rm generation
+    alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
+    # alg_name = 'mul_hie_iqrm'  # multi-level hierarchical iqrm with option elimination & sub-rm generation
 
     print('num_times:', independent_trail_times)
     print('env_name:', env_name)

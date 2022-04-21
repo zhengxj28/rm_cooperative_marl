@@ -60,6 +60,7 @@ class Obstacle(Entity):
     def __str__(self):
         return "X"
 
+
 class Door(Entity):
     def __init__(self, i, j):
         super().__init__(i, j)
@@ -77,6 +78,7 @@ class Door(Entity):
 
     def __str__(self):
         return "D"
+
 
 # class Button(Entity):
 #     def __init__(self, i, j, label):
@@ -166,7 +168,8 @@ class PassRoomEnv:
         # I use the lower case letters to define the features
         self.class_ids = {}
         self.agents = dict()
-        propositions = set()  # characters on the map, e.g. 'a','b'
+        self.button_chars = set()  # characters on the map, e.g. 'a','b'
+        room_buttons = set()  # characters on the goal room
         self.door_list = []  # entity of door(s)
 
         f = open(file_map)
@@ -180,11 +183,13 @@ class PassRoomEnv:
             row = []
             j = 0
             for e in l.rstrip():
-                if e in "abcdefghijklmnopqrstuvwxyz":
+                if e in "abcdefghijklmnopq":
                     entity = Empty(i, j, label=e)
-                    propositions.add(e)
+                    self.button_chars.add(e)
                     if e not in self.class_ids:
                         self.class_ids[e] = len(self.class_ids)
+                    if self._is_goal_room(i, j):
+                        room_buttons.add(e)
                 # we need to declare the initial positions of agents
                 # to be potentially empty espaces (after they moved)
                 elif e == "A" or e == " ":
@@ -193,8 +198,7 @@ class PassRoomEnv:
                     entity = Obstacle(i, j)
                 elif e == "D":
                     entity = Door(i, j)
-                    # propositions.add(e)
-                    door_pos_list.append((i,j))
+                    door_pos_list.append((i, j))
                 else:
                     raise ValueError('Unkown entity ', e)
                 if e == "A":
@@ -240,13 +244,13 @@ class PassRoomEnv:
         for ag_id in range(self.num_agents):
             event_set_of_ag_i = set()
             event_set_of_ag_i.add(tuple())  # empty event, represented as a tuple
-            for p in propositions:
+            for p in self.button_chars:
                 p_ag = p + str(ag_id + 1)
-                if p in ['c', 'd']:  # buttons in goal room
-                    event_set_of_ag_i.add((p_ag, 'r'+str(ag_id+1),))
+                if p in room_buttons:  # buttons in goal room
+                    event_set_of_ag_i.add((p_ag, 'r' + str(ag_id + 1),))
                 else:
                     event_set_of_ag_i.add((p_ag,))  # in this env, each agent cover at most one character
-            event_set_of_ag_i.add(('r'+str(ag_id+1),))
+            event_set_of_ag_i.add(('r' + str(ag_id + 1),))
 
             self.event_set_of_agents[ag_id] = event_set_of_ag_i
 
@@ -286,7 +290,7 @@ class PassRoomEnv:
         r = self.reward_machine.get_reward(self.u, u2)
         self.u = u2
 
-        if len(set(l).intersection({'a','b','c','d'})) >= 2:  # two button pressed
+        if len(set(l).intersection(self.button_chars)) >= self.num_agents - 1:  # two button pressed
             for door in self.door_list:
                 door.open()
         else:
@@ -406,8 +410,8 @@ class PassRoomEnv:
 
         return row, col
 
-    def _is_night(self):
-        return not (self.sunrise <= self.hour <= self.sunset)
+    def _is_goal_room(self, row, col):
+        return col > 11
 
     def get_actions(self, id):
         """
@@ -496,8 +500,8 @@ class PassRoomEnv:
                 event_set.add(proposition)
                 proposition = proposition + str(i + 1)  # add subscript
                 event_set_ag.add(proposition)
-            if col_i > 11:  # reach the goal room
-                event_set_ag.add('r'+str(i+1))
+            if self._is_goal_room(row_i, col_i):  # reach the goal room
+                event_set_ag.add('r' + str(i + 1))
         return list(event_set) + list(event_set_ag)
         # return list(event_set_ag)
 
@@ -546,7 +550,7 @@ def play(map_name, task_name):
         a = np.full(n, -1, dtype=int)
 
         for i in range(n):
-            print('\nAction{}?'.format(i + 1), end='')
+            print('Action{}?'.format(i + 1), end='')
             usr_inp = input()
 
             if not (usr_inp in str_to_action):
@@ -573,6 +577,6 @@ def play(map_name, task_name):
 
 # This code allow to play a game (for debugging purposes)
 if __name__ == '__main__':
-    map_name = '4button3agent'
+    map_name = '8button5agent'
     task_name = 'pass'
     play(map_name, task_name)

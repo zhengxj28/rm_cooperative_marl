@@ -1,5 +1,5 @@
 class SparseRewardMachine:
-    def __init__(self, file=None):
+    def __init__(self, file=None, paras=None):
         # <U,u0,delta_u,delta_r>
         self.U = []  # list of machine states
         self.propositions = set()  # set of propositions
@@ -9,6 +9,9 @@ class SparseRewardMachine:
         self.delta_r = {}  # reward-transition function
         self.T = set()  # set of terminal states (they are automatically detected)
         self.tag = ''  # for trouble shooting, the name of this rm
+        if paras is not None:  # paras of RM
+            self.paras = paras  # type(paras)==list
+            self.num_paras = len(paras)
         if file is not None:
             self._load_reward_machine(file)
 
@@ -91,11 +94,33 @@ class SparseRewardMachine:
         f = open(file)
         lines = [l.rstrip() for l in f]
         f.close()
+
         # setting the DFA
-        self.u0 = eval(lines[0])
+        use_paras = False
+        e = eval(lines[0])
+        if type(e)==int:
+            self.u0 = e
+        elif type(e)==tuple:
+            self.u0 = e[0]
+            variables = e[1]  # example: ['i','j','k']
+            use_paras = True
+            if len(variables) != self.num_paras:
+                raise ValueError('The number of variables not equals to parameters.')
+        else:
+            raise Exception('Invalid RM file: ' + file)
+
         # adding transitions
+        replace_dict = dict()
+        if use_paras:
+            """
+            replace variables with paras
+            Example: variables=('i','j'), self.paras=['2','1'], then
+            ('ai','bj') --> ('a2','b1')
+            """
+            for i in range(self.num_paras):
+                replace_dict[variables[i]] = self.paras[i]
         for e in lines[1:]:
-            event = self._add_transition(*eval(e))  # event: sorted tuple
+            event = self._add_transition(*eval(e.translate(str.maketrans(replace_dict))))  # event: sorted tuple
             self.propositions = self.propositions.union(set(event))
             self.event_set.add(event)
         # adding terminal states
@@ -160,15 +185,12 @@ class SparseRewardMachine:
             self.delta_u[u1][event] = u2
         elif self.delta_u[u1][event] != u2:
             raise Exception('Trying to make rm transition function non-deterministic.')
-            # self.delta_u[u1][u2].append(event)
         # Adding reward-transition to delta_r
         if u1 not in self.delta_r:
             self.delta_r[u1] = {}
         self.delta_r[u1][u2] = reward
         return event  # return normal form: sorted tuple
 
-    # def get_local_events(self,ag_id):  # get local events of agent i
-    #     return ag_id
 
 if __name__ == '__main__':  # for debug only
     import os
@@ -187,10 +209,14 @@ if __name__ == '__main__':  # for debug only
     # print(test_rm2.get_next_state(2, ['a3br', 'a2br']))
     # print(test_rm2.get_next_state(2, 'g'))
 
-    rm_file1 = os.path.join(base_file_path, 'reward_machines', 'minecraft2', 'multiA_map_0', 'task2team.txt')
-    test_rm = SparseRewardMachine(rm_file1)
-    atom_rm = SparseRewardMachine()
-    atom_rm.build_atom_rm(('c1', 'r1'),
-                          propositions={'a1','b1','c1','d1','r1'},
-                          event_set={'1','a1','b1','c1','d1','r1',('c1','r1'), ('d1','r1')})
+    # rm_file1 = os.path.join(base_file_path, 'reward_machines', 'minecraft2', 'multiA_map_0', 'task2team.txt')
+    # test_rm = SparseRewardMachine(rm_file1)
+    # atom_rm = SparseRewardMachine()
+    # atom_rm.build_atom_rm(('c1', 'r1'),
+    #                       propositions={'a1','b1','c1','d1','r1'},
+    #                       event_set={'1','a1','b1','c1','d1','r1',('c1','r1'), ('d1','r1')})
+
+    rm_file1 = os.path.join(base_file_path, 'reward_machines', 'pass_room', '4button3agent', 'passL1ab_c_a.txt')
+    test_rm = SparseRewardMachine(rm_file1, ['1','3','2'])
+
     print(test_rm)

@@ -1,0 +1,4 @@
+0, ['i','j','k'] # initial state, number of parameters
+(0, 1, ('ai','bj','rk'), 0)
+(1, 2, ('ri','bj','dk'), 0)
+(2, 3, ('di','rj','dk'), 1)
