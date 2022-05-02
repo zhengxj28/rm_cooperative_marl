@@ -1,6 +1,6 @@
 class SparseRewardMachine:
-    def __init__(self, file=None, paras=None):
-        # <U,u0,delta_u,delta_r>
+    def __init__(self, file=None, ag_group_list=None, tag=''):
+        # <U,u0,delta_u,delta_r>(ag_group_list)
         self.U = []  # list of machine states
         self.propositions = set()  # set of propositions
         self.event_set = set()  # set of events, each event is a subset of propositions
@@ -8,10 +8,13 @@ class SparseRewardMachine:
         self.delta_u = {}  # state-transition function
         self.delta_r = {}  # reward-transition function
         self.T = set()  # set of terminal states (they are automatically detected)
-        self.tag = ''  # for trouble shooting, the name of this rm
-        if paras is not None:  # paras of RM
-            self.paras = paras  # type(paras)==list
-            self.num_paras = len(paras)
+        self.tag = tag  # the name of this rm
+        if ag_group_list is not None:  # an ordered list of groups, each group is a subset of agents
+            self.ag_group_list = [str(group) for group in ag_group_list]
+            self.num_group = len(ag_group_list)
+            # self.ag_id_list = list()  # related agents of this rm
+            # for group in ag_group_list:
+            #     self.ag_id_list += list(group)
         if file is not None:
             self._load_reward_machine(file)
 
@@ -28,7 +31,6 @@ class SparseRewardMachine:
         return s
 
     # Public methods -----------------------------------
-
     def get_initial_state(self):
         return self.u0
 
@@ -98,13 +100,13 @@ class SparseRewardMachine:
         # setting the DFA
         use_paras = False
         e = eval(lines[0])
-        if type(e)==int:
+        if type(e) == int:
             self.u0 = e
-        elif type(e)==tuple:
+        elif type(e) == tuple:
             self.u0 = e[0]
             variables = e[1]  # example: ['i','j','k']
             use_paras = True
-            if len(variables) != self.num_paras:
+            if len(variables) != self.num_group:
                 raise ValueError('The number of variables not equals to parameters.')
         else:
             raise Exception('Invalid RM file: ' + file)
@@ -114,18 +116,18 @@ class SparseRewardMachine:
         if use_paras:
             """
             replace variables with paras
-            Example: variables=('i','j'), self.paras=['2','1'], then
+            Example: variables=['i','j'], self.ag_group_list=['2','1'], then
             ('ai','bj') --> ('a2','b1')
             """
-            for i in range(self.num_paras):
-                replace_dict[variables[i]] = self.paras[i]
+            for i in range(self.num_group):
+                replace_dict[variables[i]] = self.ag_group_list[i]
         for e in lines[1:]:
             event = self._add_transition(*eval(e.translate(str.maketrans(replace_dict))))  # event: sorted tuple
             self.propositions = self.propositions.union(set(event))
             self.event_set.add(event)
         # adding terminal states
         for u1 in self.U:
-            if self._is_terminal(u1):
+            if self._is_terminal_state(u1):
                 self.T.add(u1)
         self.U = sorted(self.U)
         self.tag = file
@@ -134,14 +136,14 @@ class SparseRewardMachine:
         self.propositions = propositions
         for e in event_set:
             if type(e) == str:
-                self.event_set.add((e, ))
+                self.event_set.add((e,))
             else:
                 e_sort = list(set(e))
                 e_sort = sorted(e_sort)
                 self.event_set.add(tuple(e_sort))
         self.u0 = 0
         event = self._add_transition(0, 1, event, 1)
-        for event_ in self.event_set.difference({event,}):
+        for event_ in self.event_set.difference({event, }):
             self._add_transition(1, 0, event_, -1)
         self.tag = str(event)
 
@@ -156,7 +158,7 @@ class SparseRewardMachine:
             current_state = next_state
         return total_reward
 
-    def _is_terminal(self, u1):  # terminal iff r=1
+    def _is_terminal_state(self, u1):  # terminal iff r=1
         # Check if reward is given for reaching the state in question
         for u0 in self.delta_r:
             if u1 in self.delta_r[u0]:
@@ -216,7 +218,7 @@ if __name__ == '__main__':  # for debug only
     #                       propositions={'a1','b1','c1','d1','r1'},
     #                       event_set={'1','a1','b1','c1','d1','r1',('c1','r1'), ('d1','r1')})
 
-    rm_file1 = os.path.join(base_file_path, 'reward_machines', 'pass_room', '4button3agent', 'passL1ab_c_a.txt')
-    test_rm = SparseRewardMachine(rm_file1, ['1','3','2'])
+    rm_file1 = os.path.join(base_file_path, 'reward_machines', 'pass_room', '4button3agent', 'pass2L2ab_c.txt')
+    test_rm = SparseRewardMachine(rm_file1, [{'1'}, {'3','2'}])
 
     print(test_rm)

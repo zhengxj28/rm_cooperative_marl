@@ -185,13 +185,13 @@ class Agent:
                                      + alpha * (reward + gamma * np.amax(self.q[rm_id][s_new][u_new]))
 
 
-class High_Controller:
+class L1_Controller:
     """
     The high-level controller helps the agents choose their own
     subtask (rm) properly to complete the whole team task efficiently.
     """
 
-    def __init__(self, rm_file_name, num_rm_list, agent_list):
+    def __init__(self, rm_file_name, proposition, ag_group_list, num_rm_list, agent_list):
         """
         Initialize agent object.
 
@@ -202,8 +202,9 @@ class High_Controller:
         num_rm_list : list
             Num of available rm of each agent,
         """
-        self.rm_file_name = rm_file_name  # team task
-        self.rm = SparseRewardMachine(self.rm_file_name)
+        self.tag = proposition
+        self.rm_file_name = rm_file_name  # level-1 subtask
+        self.rm = SparseRewardMachine(self.rm_file_name, ag_group_list=ag_group_list, tag=proposition)
 
         self.u = self.rm.get_initial_state()
         self.local_propositions = self.rm.get_propositions()
@@ -265,13 +266,7 @@ class High_Controller:
         T = learning_params.T_controller  # temperature of softmax
         if random.random() < epsilon:
             weight = np.ones(self.num_rm_list)
-            # o = []
-            # for i in range(self.num_agents):
-            #     o.append(random.choice([id for id in range(self.num_rm_list[i])]))
         else:
-            # epsilon-greedy implementation
-            # o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
-
             # softmax implementation
             weight = np.exp(self.q[self.u, :] * T)
 
@@ -283,7 +278,7 @@ class High_Controller:
         # If any q-values are so large that the softmax function returns infinity,
         # make the corresponding actions equally likely
         if any(np.isnan(pr)):
-            print('GET OPTION: BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
+            print('L1 GET OPTION: BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
             temp = np.array(np.isnan(np.reshape(pr, [pr.size])), dtype=float)
             pr = temp / np.sum(temp)
 
@@ -343,6 +338,166 @@ class High_Controller:
             # Bellman update
             self.q[u_start][o] = (1 - alpha) * self.q[u_start][o] \
                                  + alpha * (G + math.pow(gamma, tau) * self.q[u_new].max())
+
+    def is_terminal(self):
+        return self.rm.is_terminal_state(self.u)
+
+class L2_Controller:
+    """
+    The high-level controller helps the agents choose their own
+    subtask (rm) properly to complete the whole team task efficiently.
+    """
+
+    def __init__(self, rm_file_name, num_agents):
+        """
+        Initialize agent object.
+
+        Parameters
+        ----------
+        rm_file_name : str
+            File path pointing to the reward machine of team task.
+        num_rm_list : list
+            Num of available rm of each agent,
+        """
+        self.rm_file_name = rm_file_name  # team task
+        self.rm = SparseRewardMachine(self.rm_file_name)
+
+        self.u = self.rm.get_initial_state()
+        self.local_propositions = self.rm.get_propositions()
+
+        self.num_agents = num_agents
+        self.num_propositions = len(self.rm.propositions)
+
+        """
+        Create a list of the dimension of high-high-level q-function
+        each option is a proposition associated with an order of agents
+        thus num_options is num_propositions*factorial(num_agents)
+        """
+        self.num_rm_list = [self.num_propositions * math.factorial(self.num_agents), ]
+        q_shape = [len(self.rm.U), ] + self.num_rm_list
+        self.q = np.zeros(q_shape)  # for softmax selection
+        # self.q = np.ones(q_shape)  # for epsilon-greedy
+        self.num_options = self.q[0].size  # number of all possible options
+        self.is_task_complete = 0
+
+        # action_mask_matrix[u][o]=1 iff option o causes rm transit to another state u'!=u
+        # action_mask_matrix[u][o]=0 iff rm does not transit to another state
+        self.action_mask_matrix = np.ones(q_shape, dtype=int)
+        # for u in self.rm.U:
+        #     for o_index in range(self.num_options):
+        #         o = np.unravel_index(o_index, self.num_rm_list)
+        #         events = set()  # events of all agent under option o
+        #         for ag_id in range(self.num_agents):
+        #             local_event = set(agent_list[ag_id].rm_id2event[o[ag_id]])
+        #             events = events.union(local_event)
+        #         events = tuple(sorted(list(events)))
+        #         if self.rm.get_next_state(u, events) == u:
+        #             self.action_mask_matrix[u][o] = 0
+
+    def initialize_reward_machine(self):
+        """
+        Reset the state of the reward machine to the initial state and reset task status.
+        """
+        self.u = self.rm.get_initial_state()
+        self.is_task_complete = 0
+
+    def is_local_event_available(self, label):
+        if label:  # Only try accessing the first event in label if it exists
+            event = label[0]
+            return self.rm.is_event_available(self.u, event)
+        else:
+            return False
+
+    def get_next_option(self, epsilon, learning_params):
+        """
+        Return the action next action selected by the agent.
+
+        Outputs
+        -------
+        s : int
+            Index of the agent's current state.
+        a : int
+            Selected next action for this agent.
+        """
+
+        T = learning_params.T_controller  # temperature of softmax
+        if random.random() < epsilon:
+            weight = np.ones(self.num_rm_list)
+        else:
+            # softmax implementation
+            weight = np.exp(self.q[self.u, :] * T)
+
+        # action mask, eliminate forbidden option
+        weight = np.multiply(weight, self.action_mask_matrix[self.u, :])
+
+        pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
+        pr = np.reshape(pr, [pr.size])  # reshape to 1d array
+        # If any q-values are so large that the softmax function returns infinity,
+        # make the corresponding actions equally likely
+        if any(np.isnan(pr)):
+            print('L2 GET OPTION: BOLTZMANN CONSTANT TOO LARGE IN ACTION-SELECTION SOFTMAX.')
+            temp = np.array(np.isnan(np.reshape(pr, [pr.size])), dtype=float)
+            pr = temp / np.sum(temp)
+
+        pr = torch.tensor(pr)
+        dist = torch.distributions.Categorical(pr)
+        o = dist.sample()
+        # o = np.unravel_index(o, self.num_rm_list)
+
+        # return list(o)
+        return o
+
+    def update_controller(self, label):
+        """
+        Update the state of reward machine after
+        interacting with the environment.
+
+        Parameters
+        ----------
+        label : string
+            Label returned by the high-level(Level 1) rm_state.
+        """
+
+        # Keep track of the RM location at the start of the
+        u2 = self.rm.get_next_state(self.u, label)
+        is_state_changed = (self.u != u2)
+        self.u = u2
+
+        # Moving to the next state
+        # Completed task. Set flag.
+        self.is_task_complete = self.rm.is_terminal_state(self.u)
+        return is_state_changed
+
+    def update_q_function(self, u_start, o, G, tau, learning_params):
+        """
+        Update the q function using the action, states, and reward value.
+
+        Parameters
+        ----------
+        u_start : int
+            Index of the agent's RM state when starting the option
+        o : int
+            Option, i.e. chosen RM
+        G : float
+            Cumulative discounted team reward during executing the option
+        tau: int
+            Total steps of executing the option
+        learning_params : LearningParameters object
+            Object storing parameters to be used in learning.
+        """
+        alpha = learning_params.alpha_controller
+        gamma = learning_params.gamma_controller
+
+        # o = tuple(o)
+        u_new = self.u
+        if self.rm.is_terminal_state(u_new):
+            self.q[u_start][o] = (1 - alpha) * self.q[u_start][o] + alpha * G
+        else:
+            # Bellman update
+            self.q[u_start][o] = (1 - alpha) * self.q[u_start][o] \
+                                 + alpha * (G + math.pow(gamma, tau) * self.q[u_new].max())
+
+
 
 
 if __name__ == '__main__':  # for debug only

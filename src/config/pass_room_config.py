@@ -17,8 +17,9 @@ def pass_room_config(num_times, task_name, map_name):
     max_num_agents = 5
     base_file_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 
-    joint_rm_file = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name, task_name + 'team.txt')
+    team_rm_file = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name, task_name + 'env.txt')
 
+    ############## dqprm, iqrm, hie_iqrm methods, not used in hie_iqrm2, hie_iqrm_3L ##############################
     local_rm_files = []
     for i in range(max_num_agents):
         local_rm_string = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name,
@@ -48,18 +49,19 @@ def pass_room_config(num_times, task_name, map_name):
     learning_params.T = 50
     learning_params.T_controller = 50
     learning_params.initial_epsilon = 0.1  # Set epsilon to zero to turn off epsilon-greedy exploration (only using boltzmann)
+    learning_params.epsilon = learning_params.initial_epsilon
     learning_params.max_timesteps_per_task = testing_params.num_steps
 
     tester = Tester(learning_params, testing_params)
     tester.step_unit = step_unit
-    # tester.total_steps = 2000 * step_unit
-    tester.total_steps = 1 * step_unit  # for debug only
+    tester.total_steps = 2000 * step_unit
+    # tester.total_steps = 1 * step_unit  # for debug only
     tester.min_steps = 1
     tester.max_option_length = 200
 
     tester.num_times = num_times
 
-    tester.rm_test_file = joint_rm_file
+    tester.rm_test_file = team_rm_file
     tester.rm_learning_file_list = local_rm_files
     tester.rm_learning_file_name_list = local_rm_files_name
 
@@ -74,5 +76,8 @@ def pass_room_config(num_times, task_name, map_name):
     tester.env_settings = env_settings
 
     tester.experiment = 'pass_room'
+    tester.env_name = 'pass_room'
+    tester.map_name = map_name
+    tester.task_name = task_name
 
     return tester

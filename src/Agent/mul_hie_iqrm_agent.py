@@ -4,6 +4,7 @@ import numpy as np
 import random, time, os, math
 import matplotlib.pyplot as plt
 import torch
+from itertools import permutations
 
 
 class Agent:
@@ -183,52 +184,142 @@ class Agent:
             self.q[rm_id][s][u][a] = (1 - alpha) * self.q[rm_id][s][u][a] \
                                      + alpha * (reward + gamma * np.amax(self.q[rm_id][s_new][u_new]))
 
+class High_Levels:
+    """
+    High_Levels contains all levels (except level 0) of controllers, each level contains:
+    propositions: each proposition associates with an RM at level-(k-1)
+    rm_dict: set of rm, keys are propositions at level-(k+1), values are rms
+    controller_of_level: set of level-(k-1) controllers, keys are level, values are list of controllers
+    Q: Q-functions
+    """
+    def __init__(self, tester, agent_list):
+        self.steps = 0  # executing steps of episode
+        self.tau = 0  # executing steps of current option
+        self.env_name = tester.env_name
+        self.map_name = tester.map_name
+        self.task_name = tester.task_name
+        self.num_levels = 2
+
+        # self.propositions_of_level = dict()
+
+        # load rms for each level
+        self.rms_of_level = dict()
+        for level in range(self.num_levels-1, 0):
+            rms_of_this_level = list()
+            if level == self.num_levels-1:
+                rms_of_this_level.append(self.load_rm(level, "team", ag_id_list=None))
+            else:
+                for rm_last_level in self.rms_of_level[level+1]:
+                    proposition = rm_last_level.propositions
+                    agents_group = rm_last_level.ag_group_list
+                    for sublist_of_agents in permutations(agents_group):
+                        rms_of_this_level.append(self.load_rm(level, proposition, sublist_of_agents))
+            self.rms_of_level[level] = rms_of_this_level
+
+        # build controller
+        self.controllers_of_level = dict()
+        for level in range(self.num_levels - 1, 0):
+            controllers_of_this_level = list()
+            for rm in self.rms_of_level[level]:
+                for ag_group in rm.ag_group_list:
+                    num_rm_of_each_group = list()
+
+                controller = High_Controller(rm, num_rm_of_each_group)
+            # if level == self.num_levels-1:
+            #     team_rm = self.rms_of_level[level][0]
+            #     controller = High_Controller(team_rm, num_rm_of_each_group)
+            # else:
+            #
+
+    def load_rm(self, level, proposition, ag_id_list):
+        rm_file_Dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, 'reward_machines'))
+        rm_file_path = os.path.join(rm_file_Dir, self.env_name, self.map_name)
+        rm_file_name = rm_file_path + self.task_name + "L%d"%level + proposition + ".txt"
+        rm = SparseRewardMachine(rm_file_name, ag_group_list=ag_id_list, tag=proposition)
+        return rm
+
+    def initialize(self):
+        pass
+
+    def update_Q_functions(self,level):
+        pass
+
+    def update_rm_states(self,level):
+        pass
+
+    def calculate_G(self,level):
+        pass
+
+    def get_label(self,level):
+        pass
+
+    def is_rm_state_changed(self,level):
+        return False
+
+    def get_action(self,level):
+        pass
+
+    def add_step(self):
+        self.steps += 1
+        self.tau += 1
+
+    def clear_step(self):
+        self.steps = 0
+        self.tau = 0
+
 
 class High_Controller:
     """
     The high-level controller helps the agents choose their own
     subtask (rm) properly to complete the whole team task efficiently.
+
+    One high-level controller contains the following elements:
+    propositions: each proposition associates with an RM at level-(k-1)
+    rm: controller of this rm, with propositions of level-(k-1)
+    controller_list: set of level-(k-1) controllers
+    q: Q-functions of this rm
+
     """
 
-    def __init__(self, rm_file_name, num_rm_list, agent_list):
+    def __init__(self, rm, num_rm_of_each_group):
         """
         Initialize agent object.
 
         Parameters
         ----------
-        rm_file_name : str
-            File path pointing to the reward machine of team task.
-        num_rm_list : list
+        rm : SparseRewardMachine
+            rm of this controller, consisting of:
+            tag: corresponding proposition (at the last level)
+            propositions: at this level
+        num_rm_of_each_group : list
             Num of available rm of each agent,
         """
-        self.rm_file_name = rm_file_name  # team task
-        self.rm = SparseRewardMachine(self.rm_file_name)
+        self.rm = rm
 
         self.u = self.rm.get_initial_state()
         self.local_propositions = self.rm.get_propositions()
 
-        self.num_agents = len(num_rm_list)
-        self.num_rm_list = num_rm_list
-
+        self.num_agent_groups = len(num_rm_of_each_group)
+        self.num_rm_list = num_rm_of_each_group
         """
         Create a list of the dimension of high-level q-function
-        Let N be num_agents, O_i is num_rm of agent i, then the shape is UxO1X...XON
-        each option is the rm tuple of agents: o=(rm1,rm2,...,rmN)
+        Let s be num of groups, O_i is num_rm of group i, then the shape is q_shape: UxO1x...xOs
+        each option is the rm tuple: o=(rm1,rm2,...,rms)
         """
-        q_shape = [len(self.rm.U), ] + num_rm_list
+        q_shape = [len(self.rm.U), ] + num_rm_of_each_group
         self.q = np.zeros(q_shape)  # for softmax selection
         # self.q = np.ones(q_shape)  # for epsilon-greedy
         self.num_options = self.q[0].size  # number of all possible options
         self.is_task_complete = 0
 
         # action_mask_matrix[u][o]=1 iff option o causes rm transit to another state u'!=u
-        # action_mask_matrix[u][o]=1 iff rm does not transit to another state
+        # action_mask_matrix[u][o]=0 iff rm does not transit to another state
         self.action_mask_matrix = np.ones(q_shape, dtype=int)
         for u in self.rm.U:
             for o_index in range(self.num_options):
                 o = np.unravel_index(o_index, self.num_rm_list)
                 events = set()  # events of all agent under option o
-                for ag_id in range(self.num_agents):
+                for ag_id in range(self.num_agent_groups):
                     local_event = set(agent_list[ag_id].rm_id2event[o[ag_id]])
                     events = events.union(local_event)
                 events = tuple(sorted(list(events)))
@@ -264,13 +355,7 @@ class High_Controller:
         T = learning_params.T_controller  # temperature of softmax
         if random.random() < epsilon:
             weight = np.ones(self.num_rm_list)
-            # o = []
-            # for i in range(self.num_agents):
-            #     o.append(random.choice([id for id in range(self.num_rm_list[i])]))
         else:
-            # epsilon-greedy implementation
-            # o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
-
             # softmax implementation
             weight = np.exp(self.q[self.u, :] * T)
 

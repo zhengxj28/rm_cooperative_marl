@@ -1,15 +1,69 @@
 import numpy as np
 import random, time, os, math
-from src.Agent.hie_iqrm_agent import Agent, High_Controller
+from src.Agent.mul_hie_iqrm_agent import *
 from src.tester.tester import Tester
 from src.Environments.load_env import *
 import matplotlib.pyplot as plt
 
 
-def run_qlearning_task(epsilon,
-                       tester,
-                       controller,
-                       agent_list,
+def run_level(env, level, tester, high_levels, update_q_function):
+    """
+
+    Parameters
+    ----------
+    env: environment
+    level: int, current level
+    tester: Tester, storing information of hyper parameters
+    high_levels: High_Levels, storing information of steps, tau, structure of task (represented as multi-level RM)
+    update_q_function: bool, True in run_qlearning, False in run_test
+
+    Returns
+    -------
+
+    """
+    learning_params = tester.learning_params
+    testing_params = tester.testing_params
+    max_episode_length = tester.learning_params.max_timesteps_per_task
+    max_option_length = tester.max_option_length
+    if level == 0:
+        while (high_levels.steps < max_episode_length) \
+                and (high_levels.tau < max_option_length) \
+                and (not high_levels.is_rm_state_changed(level + 1)):
+            s = env.get_state()
+            a = high_levels.get_action(level)
+            _, l, s_new = env.environment_step(a)
+
+            high_levels.update_rm_states(level)
+            if update_q_function:
+                high_levels.update_Q_functions(level, l)
+            high_levels.calculate_G(level + 1)
+            high_levels.get_label(level + 1)
+            high_levels.update_rm_states(level + 1)
+            high_levels.add_step()
+            s = s_new
+            if tester.start_test():
+                break
+    else:
+        while (high_levels.steps < max_episode_length) \
+                and (high_levels.tau < max_option_length) \
+                and (not high_levels.is_rm_state_changed(level + 1)):
+            high_levels.get_action(level)
+            run_level(env, level - 1, tester, high_levels, update_q_function)
+            high_levels.update_rm_states(level)
+            if update_q_function:
+                high_levels.update_Q_functions(level)
+            high_levels.calculate_G(level + 1)
+            high_levels.get_label(level + 1)
+            high_levels.update_rm_states(level + 1)
+            high_levels.add_step()
+            tester.add_step()
+            if tester.start_test():
+                break
+    return
+
+
+def run_qlearning_task(tester,
+                       high_levels,
                        show_print=True):
     """
     This code runs one q-learning episode. q-functions, and accumulated reward values of agents
@@ -31,140 +85,47 @@ def run_qlearning_task(epsilon,
     learning_params = tester.learning_params
     testing_params = tester.testing_params
 
-    num_agents = len(agent_list)
-
-    controller.initialize_reward_machine()
-    for i in range(num_agents):
-        agent_list[i].initialize_reward_machine()
-
-    num_steps = learning_params.max_timesteps_per_task
+    high_levels.initialize()
+    num_levels = high_levels.num_levels
 
     env = load_testing_env(tester)
 
-    steps = 0
-    while steps < num_steps and not env.reward_machine.is_terminal_state(env.u):
-        # choose the best rm for each agent by controller
-        o = controller.get_next_option(epsilon, learning_params)
-        for ag_id in range(num_agents):
-            agent_list[ag_id].set_rm(rm_id=o[ag_id])
+    run_level(env, num_levels - 1, tester, high_levels, update_q_function=True)
 
-        G = 0  # cumulative discounted team reward
-        tau = 0
-        u_start = controller.u  # store current state of controller
-        while (tau < tester.max_option_length) and not env.reward_machine.is_terminal_state(env.u):
-            # Perform a q-learning step.
-            s = env.get_state()
-            a = np.array([agent_list[i].get_next_action(s[i], epsilon, learning_params) for i in range(num_agents)])
-            r_team, l, s_new = env.environment_step(a)
-            G = math.pow(tester.learning_params.gamma_controller, tau) * r_team + G
+    if tester.start_test():
+        step = tester.get_current_step()
+        high_levels_copy = High_Levels(high_levels.task_name)
+        testing_reward, trajectory, testing_steps = run_test(tester,
+                                                             high_levels_copy,
+                                                             show_print=show_print)
+        # Save the testing reward
+        if 0 not in tester.results.keys():
+            tester.results[0] = {}
+        if step not in tester.results[0]:
+            tester.results[0][step] = []
+        tester.results[0][step].append(testing_reward)
 
-            for ag_id in range(num_agents):
-                agent = agent_list[ag_id]
+        # Save the testing trace
+        if 'trajectories' not in tester.results.keys():
+            tester.results['trajectories'] = {}
+        if step not in tester.results['trajectories']:
+            tester.results['trajectories'][step] = []
+        tester.results['trajectories'][step].append(trajectory)
 
-                agent.update_agent(label=l)  # update RM state of this agent
+        # Save how many steps it took to complete the task
+        if 'testing_steps' not in tester.results.keys():
+            tester.results['testing_steps'] = {}
+        if step not in tester.results['testing_steps']:
+            tester.results['testing_steps'][step] = []
+        tester.results['testing_steps'][step].append(testing_steps)
 
-                # update all the Q-functions of all RMs of this agent
-                for rm_id in range(agent.num_rms):
-                    rm = agent.avail_rms[rm_id]
-                    for u1_ in rm.U:
-                        u2_ = rm.get_next_state(u1_, l)
-                        r = rm.get_reward(u1_, u2_)
-                        agent.update_q_function(rm_id=rm_id,
-                                                s=s[ag_id],
-                                                s_new=s_new[ag_id],
-                                                u=u1_,
-                                                u_new=u2_,
-                                                a=a[ag_id],
-                                                reward=r,
-                                                learning_params=learning_params)
-            # Update step count
-            tau += 1
-            steps += 1
-            tester.add_step()
-            # update the high-level controller after executing the option
-            is_state_changed = controller.update_controller(l)  # update_controller(l) return a boolean
-            if (steps >= num_steps) or tester.start_test() or is_state_changed:
-                break
-            if env.reward_machine.is_terminal_state(env.u):
-                pass
-
-        ################ option has been completed ######################
-        # update Q-function of the controller
-        if not tester.start_test():
-            controller.update_q_function(u_start, o, G, tau, learning_params)
-
-        # If enough steps have elapsed, test and save the performance of the agents.
-        if tester.start_test():
-            t_init = time.time()
-            step = tester.get_current_step()
-
-            agent_list_copy = []
-
-            # Need to create a copy of the agent for testing. If we pass the agent directly
-            # mid-episode to the test function, the test will reset the world-state and reward machine
-            # state before the training episode has been completed.
-            for i in range(num_agents):
-                actions = agent_list[i].actions
-                agent_id = agent_list[i].agent_id
-                num_states = agent_list[i].num_states
-                local_event_set = env.event_set_of_agents[i]
-                agent_copy = Agent(local_event_set, num_states, actions, agent_id)
-                # Pass only the q-function by reference so that the testing updates the original agent's q-function.
-                agent_copy.q = agent_list[i].q
-                agent_list_copy.append(agent_copy)
-            controller_copy = High_Controller(tester.rm_test_file, controller.num_rm_list, agent_list_copy)
-            controller_copy.q = controller.q
-            # Run a test of the performance of the agents
-            testing_reward, trajectory, testing_steps = run_test(controller_copy,
-                                                                 agent_list_copy,
-                                                                 tester,
-                                                                 learning_params,
-                                                                 testing_params,
-                                                                 show_print=show_print)
-            # Save the testing reward
-            if 0 not in tester.results.keys():
-                tester.results[0] = {}
-            if step not in tester.results[0]:
-                tester.results[0][step] = []
-            tester.results[0][step].append(testing_reward)
-
-            # Save the testing trace
-            if 'trajectories' not in tester.results.keys():
-                tester.results['trajectories'] = {}
-            if step not in tester.results['trajectories']:
-                tester.results['trajectories'][step] = []
-            tester.results['trajectories'][step].append(trajectory)
-
-            # Save how many steps it took to complete the task
-            if 'testing_steps' not in tester.results.keys():
-                tester.results['testing_steps'] = {}
-            if step not in tester.results['testing_steps']:
-                tester.results['testing_steps'][step] = []
-            tester.results['testing_steps'][step].append(testing_steps)
-
-            # Keep track of the steps taken
-            if len(tester.steps) == 0 or tester.steps[-1] < step:
-                tester.steps.append(step)
-
-        # If each agent has completed its task, reset it to its initial state.
-        if all(agent.is_task_complete for agent in agent_list):
-            for i in range(num_agents):
-                agent_list[i].initialize_reward_machine()
-
-            # Make sure we've run at least the minimum number of training steps before breaking the loop
-            if tester.stop_task(steps):
-                break
-
-        # checking the steps time-out
-        if tester.stop_learning():
-            break
+        # Keep track of the steps taken
+        if len(tester.steps) == 0 or tester.steps[-1] < step:
+            tester.steps.append(step)
 
 
-def run_test(controller,
-             agent_list,
-             tester,
-             learning_params,
-             testing_params,
+def run_test(tester,
+             high_levels,
              show_print=True):
     """
     Run a test of the q-learning with reward machine method with the current q-function.
@@ -188,45 +149,10 @@ def run_test(controller,
     step : int
         Number of testing steps required to complete the task.
     """
-    num_agents = len(agent_list)
-
     testing_env = load_testing_env(tester)
+    num_levels = high_levels.num_levels
 
-    for i in range(num_agents):
-        agent_list[i].initialize_reward_machine()
-
-    a_team = np.full(num_agents, -1, dtype=int)
-    testing_reward = 0
-
-    trajectory = []
-    steps = 0
-    num_steps = testing_params.num_steps
-
-    # Starting interaction with the environment
-    while steps < num_steps:
-        o = controller.get_next_option(-1.0, learning_params)
-        print([agent_list[ag_id].avail_rms[o[ag_id]].tag for ag_id in range(len(o))])  # show which sub-rm is executed
-        for ag_id in range(num_agents):
-            agent_list[ag_id].set_rm(rm_id=o[ag_id])
-        tau = 0
-        while (tau < tester.max_option_length) and not all(agent.is_task_complete for agent in agent_list):
-            # Perform a team step
-            s_team = testing_env.get_state()
-            for i in range(num_agents):
-                a_team[i] = agent_list[i].get_next_action(s_team[i], -1.0, learning_params)
-            # trajectory.append({'s' : np.array(s_team, dtype=int), 'a' : np.array(a_team, dtype=int), 'u_team': np.array(u_team, dtype=int), 'u': int(testing_env.u)})
-            r, l, s_team_next = testing_env.environment_step(a_team)
-            testing_reward = testing_reward + r
-            tau += 1
-            steps += 1
-            for i in range(num_agents):
-                agent_list[i].update_agent(l)
-            is_state_changed = controller.update_controller(l)
-            if (steps >= num_steps) or testing_env.reward_machine.is_terminal_state(testing_env.u) \
-                    or is_state_changed:
-                break
-        if testing_env.reward_machine.is_terminal_state(testing_env.u):
-            break
+    run_level(testing_env, num_levels, tester, high_levels, update_q_function=False)
 
     if show_print:
         print('Reward of {} achieved in {} steps. Current step: {} of {}'.format(testing_reward, steps,
@@ -278,7 +204,9 @@ def run_mul_hie_iqrm_experiment(tester,
             agent_i = Agent(local_event_set, testing_env.num_states, actions, i)
             agent_list.append(agent_i)
             num_rm_list.append(agent_i.num_rms)
-        controller = High_Controller(rm_test_file, num_rm_list, agent_list)
+
+        high_levels = High_Levels(tester, agent_list)
+
         num_episodes = 0
 
         # Task loop
@@ -286,19 +214,14 @@ def run_mul_hie_iqrm_experiment(tester,
 
         while not tester.stop_learning():
             num_episodes += 1
-            # epsilon = epsilon*0.99
-            run_qlearning_task(epsilon,
-                               tester,
-                               controller,
-                               agent_list,
+            run_qlearning_task(tester,
+                               high_levels,
                                show_print=show_print)
 
         # Backing up the results
         end_time = time.time()
         step_time = (end_time - start_time) / (tester.total_steps / tester.step_unit)
         print('Finished iteration ', trail_id, 'Running time %.4f s per %d steps' % (step_time, tester.step_unit))
-
-    # tester.agent_list = agent_list
 
     # # plot_multi_agent_results(tester, num_agents)
     # plot_multi_agent_results(tester.results['testing_steps'], num_agents)

@@ -41,7 +41,7 @@ if __name__ == "__main__":
     env_name = 'pass_room'
     map_name = '4button3agent'
     # map_name = '8button5agent'
-    # task_name = 'pass'
+    task_name = 'pass'
     # task_name = 'pass_rs'
     # task_name = 'pass_rs2'
     # task_name = 'pass2'
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # task_name = 'pass3'
     # task_name = 'pass3_rs'
     # task_name = 'pass4'
-    task_name = 'pass4_rs'
+    # task_name = 'pass4_rs'
 
     ################## decide which algorithm to run ###############################
     # alg_name= 'cqrm'  # centralized qrm
@@ -59,8 +59,10 @@ if __name__ == "__main__":
     # alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
     # alg_name = 'iqrm'  # independent qrm
     # alg_name = 'hie_iqrm'  # hierarchical iqrm
-    alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
+    # alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
     # alg_name = 'mul_hie_iqrm'  # multi-level hierarchical iqrm with option elimination & sub-rm generation
+    alg_name = 'hie_iqrm_3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
+
 
     print('num_times:', independent_trail_times)
     print('env_name:', env_name)
@@ -132,6 +134,18 @@ if __name__ == "__main__":
         from algorithms.hie_iqrm2 import run_hie_iqrm2_experiment
 
         run_hie_iqrm2_experiment(tester, independent_trail_times, show_print=True)
+    elif alg_name == 'mul_hie_iqrm':
+        print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
+        print("temperature of controller T_controller:", tester.learning_params.T_controller)
+        from algorithms.mul_hie_iqrm import run_mul_hie_iqrm_experiment
+
+        run_mul_hie_iqrm_experiment(tester, independent_trail_times, show_print=True)
+    elif alg_name == 'hie_iqrm_3L':
+        print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
+        print("temperature of controller T_controller:", tester.learning_params.T_controller)
+        from algorithms.hie_iqrm_3L import run_hie_iqrm_3L_experiment
+
+        run_hie_iqrm_3L_experiment(tester, independent_trail_times, show_print=True)
     else:
         raise ValueError('No such algorithm: ' + alg_name)
 

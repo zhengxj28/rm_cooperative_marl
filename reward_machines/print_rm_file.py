@@ -6,6 +6,15 @@ from itertools import permutations
 #     i1,i2,i3,i4,i5 = p
 #     print("(0, 1, ('a%d','b%d','c%d','d%d','e%d'), 1)"%(i1,i2,i3,i4,i5))
 
+########## pass_room/4button3agent/passenv #########
+r_neg, r_mid, r_plus = 0, 0, 1
+for p in permutations([1, 2, 3]):
+    i, j, k = p
+    print("(0, 1, ('r%d','r%d','r%d'), %.1f)" % (i, j, k, r_plus))
+    print("(0, 1, ('c%d','r%d','r%d','r%d'), %.1f)" % (i, i,  j, k, r_plus))
+    print("(0, 1, ('d%d','r%d','r%d','r%d'), %.1f)" % (i, i,  j, k, r_plus))
+    print("(0, 1, ('c%d','d%d','r%d','r%d','r%d'), %.1f)" % (i, j, i, j,  k, r_plus))
+
 ########## pass_room/4button3agent/passteam.txt #########
 # r_neg, r_mid, r_plus = -0.1, 0.1, 1
 # for p in permutations([1, 2, 3]):
@@ -89,11 +98,11 @@ from itertools import permutations
 #     print("(2, 3, ('c%d','d%d', 'r%d', 'r%d', 'r%d'), %.1f)" % (i, j, i, j, k, r_plus))
 
 ########## pass_room/8button5agent/passteam#########
-r_neg, r_mid, r_plus = 0, 0, 1
-for p in permutations([1, 2, 3, 4, 5]):
-    i1, i2, i3, i4, i5 = p
-    # print("(0, 1, ('a%d','b%d','r%d'), %.1f)" % (i, j, k, r_mid))
-
-for p in permutations(['a','b','c']):
-    c1,c2,c3 = p
-    print("%c1,%c2,%c3"%(c1,c2,c3))
+# r_neg, r_mid, r_plus = 0, 0, 1
+# for p in permutations([1, 2, 3, 4, 5]):
+#     i1, i2, i3, i4, i5 = p
+#     # print("(0, 1, ('a%d','b%d','r%d'), %.1f)" % (i, j, k, r_mid))
+#
+# for p in permutations(['a','b','c']):
+#     c1,c2,c3 = p
+#     print("%c1,%c2,%c3"%(c1,c2,c3))

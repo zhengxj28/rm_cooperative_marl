@@ -37,12 +37,12 @@ def run_qlearning_task(epsilon,
     for i in range(num_agents):
         agent_list[i].initialize_reward_machine()
 
-    num_steps = learning_params.max_timesteps_per_task
+    max_episode_length = learning_params.max_timesteps_per_task
 
     env = load_testing_env(tester)
 
     steps = 0
-    while steps < num_steps and not env.reward_machine.is_terminal_state(env.u):
+    while steps < max_episode_length and not env.reward_machine.is_terminal_state(env.u):
         # choose the best rm for each agent by controller
         o = controller.get_next_option(epsilon, learning_params)
         for ag_id in range(num_agents):
@@ -83,7 +83,7 @@ def run_qlearning_task(epsilon,
             tester.add_step()
             # update the high-level controller after executing the option
             is_state_changed = controller.update_controller(l)  # update_controller(l) return a boolean
-            if (steps >= num_steps) or tester.start_test() or is_state_changed:
+            if (steps >= max_episode_length) or tester.start_test() or is_state_changed:
                 break
             if env.reward_machine.is_terminal_state(env.u):
                 pass

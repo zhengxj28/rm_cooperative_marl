@@ -299,6 +299,9 @@ class PassRoomEnv:
 
         return r, l, s_next
 
+    def is_terminal(self):
+        return self.reward_machine.is_terminal_state(self.u)
+
     def get_state(self):
         return self.s
 

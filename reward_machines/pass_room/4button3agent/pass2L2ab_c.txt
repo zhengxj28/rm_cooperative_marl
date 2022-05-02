@@ -1,0 +1,3 @@
+0, ['k', 'ij'] # initial state, list of variables representing groups of agents
+(0, 1, ('ai','bj','rk'), 0)
+(1, 2, ('ar_d|i_j','ck'), 1)
