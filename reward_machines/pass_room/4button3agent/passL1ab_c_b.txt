@@ -1,4 +1,4 @@
-0, ['i','j','k'] # initial state, number of parameters
+0, ['i','j','k'] # initial state, list of variables representing groups of agents
 (0, 1, ('ai','bj','rk'), 0)
-(1, 2, ('ri','bj','ck'), 0)
-(2, 3, ('di','rj','ck'), 1)
+(1, 2, ('ri','bj','ck','rk'), 0)
+(2, 3, ('di','ri','rj','ck','rk'), 1)

@@ -11,19 +11,20 @@ class Step_Counter:
     def __init__(self, tester):
         self.max_episode_length = tester.learning_params.max_timesteps_per_task
         self.max_option_length = tester.max_option_length
-        self.step = 0
-        self.tau = 0
+        self.step = 0  # episode_step
+        self.tau = [0, 0]  # tau[k] is option_step used for updating level-(k+1) Q-functions
 
     def add_step(self):
         self.step += 1
-        self.tau += 1
+        for i in range(0, len(self.tau)):
+            self.tau[i] += 1
 
-    def initialize_tau(self):
-        self.tau = 0
+    def initialize_tau(self, level):
+        self.tau[level-1] = 0
 
     def is_option_terminal(self):
         episode_terminal = (self.step >= self.max_episode_length)
-        option_terminal = (self.tau >= self.max_option_length)
+        option_terminal = (self.tau[-1] >= self.max_option_length)
         return episode_terminal or option_terminal
 
     def is_episode_terminal(self):
@@ -69,16 +70,14 @@ def run_qlearning_task(tester,
 
     # Starting interaction with the environment
     while not (step_counter.is_episode_terminal() or env.is_terminal()):
-        step_counter.initialize_tau()
+        step_counter.initialize_tau(level=2)
         o_l2 = l2_controller.get_next_option(-1.0, learning_params)
         l1_controller = l1_controller_list[o_l2]
         G_l2 = 0  # cumulative discounted reward of level-2
         u_start_l2 = l2_controller.u
         while not (step_counter.is_option_terminal() or env.is_terminal()):
-            step_counter.initialize_tau()
+            step_counter.initialize_tau(level=1)
             o_l1 = l1_controller.get_next_option(-1.0, learning_params)
-            print([agent_list[ag_id].avail_rms[o_l1[ag_id]].tag for ag_id in
-                   range(len(o_l1))])  # show which sub-rm is executed
             for ag_id in range(num_agents):
                 agent_list[ag_id].set_rm(rm_id=o_l1[ag_id])
             G_l1 = 0  # cumulative discounted reward of level-1
@@ -89,7 +88,7 @@ def run_qlearning_task(tester,
                 a = np.array([agent_list[i].get_next_action(s[i], epsilon, learning_params) for i in range(num_agents)])
                 # trajectory.append({'s' : np.array(s_team, dtype=int), 'a' : np.array(a_team, dtype=int), 'u_team': np.array(u_team, dtype=int), 'u': int(testing_env.u)})
                 r, l, s_new = env.environment_step(a)
-                G_l1 = math.pow(tester.learning_params.gamma_controller, step_counter.tau) * r + G_l1
+                G_l1 = math.pow(tester.learning_params.gamma_controller, step_counter.tau[0]) * r + G_l1
                 for ag_id in range(num_agents):
                     agent = agent_list[ag_id]
                     agent.update_agent(label=l)  # update RM state of this agent
@@ -117,21 +116,25 @@ def run_qlearning_task(tester,
                     break
             if not tester.start_test():
                 # update Q-function of l1_controller
-                l1_controller.update_q_function(u_start_l1, o_l1, G_l1, step_counter.tau, learning_params)
+                l1_controller.update_q_function(u_start_l1, o_l1, G_l1, step_counter.tau[0], learning_params)
                 # get l2_label by termination of rms of l1_controller_list
                 l2_label = list()
                 for l1_controller in l1_controller_list:
                     if l1_controller.is_terminal():
                         l2_label.append(l1_controller.tag)
                 # update l2_controller
+                u_l2_old = l2_controller.u
                 is_l2_state_changed = l2_controller.update_controller(l2_label)
+                u_l2_new = l2_controller.u
+                r_l2 = l2_controller.rm.get_reward(u_l2_old, u_l2_new)
+                G_l2 = math.pow(tester.learning_params.gamma_controller, step_counter.tau[1]) * r_l2 + G_l2
                 if is_l2_state_changed:
                     break
             else:  # start test
                 break
         if not tester.start_test():
             # update Q-funtion of l2_controller
-            l2_controller.update_q_function(u_start_l2, o_l2, G_l2, step_counter.tau, learning_params)
+            l2_controller.update_q_function(u_start_l2, o_l2, G_l2, step_counter.tau[1], learning_params)
 
         # If enough steps have elapsed, test and save the performance of the agents.
         if tester.start_test():
@@ -250,14 +253,15 @@ def run_test(l2_controller,
 
     # Starting interaction with the environment
     while not (step_counter.is_episode_terminal() or testing_env.is_terminal()):
-        step_counter.initialize_tau()
+        step_counter.initialize_tau(level=2)
         o_l2 = l2_controller.get_next_option(-1.0, learning_params)
         l1_controller = l1_controller_list[o_l2]
+        print("L2 OPTION:", l1_controller.tag, l1_controller.ag_group_list)
         while not (step_counter.is_option_terminal() or testing_env.is_terminal()):
-            step_counter.initialize_tau()
+            step_counter.initialize_tau(level=1)
             o_l1 = l1_controller.get_next_option(-1.0, learning_params)
-            print([agent_list[ag_id].avail_rms[o_l1[ag_id]].tag for ag_id in
-                   range(len(o_l1))])  # show which sub-rm is executed
+            print("L1 OPTION:", [agent_list[ag_id].avail_rms[o_l1[ag_id]].tag for ag_id in
+                                 range(len(o_l1))])  # show which sub-rm is executed
             for ag_id in range(num_agents):
                 agent_list[ag_id].set_rm(rm_id=o_l1[ag_id])
             while not (step_counter.is_option_terminal() or testing_env.is_terminal()):
@@ -287,8 +291,8 @@ def run_test(l2_controller,
             if is_l2_state_changed:
                 break
 
+    steps = step_counter.step
     if show_print:
-        steps = step_counter.step
         print('Reward of {} achieved in {} steps. Current step: {} of {}'.format(testing_reward, steps,
                                                                                  tester.current_step,
                                                                                  tester.total_steps))

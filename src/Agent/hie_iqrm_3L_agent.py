@@ -203,6 +203,7 @@ class L1_Controller:
             Num of available rm of each agent,
         """
         self.tag = proposition
+        self.ag_group_list = ag_group_list
         self.rm_file_name = rm_file_name  # level-1 subtask
         self.rm = SparseRewardMachine(self.rm_file_name, ag_group_list=ag_group_list, tag=proposition)
 

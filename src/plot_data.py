@@ -148,6 +148,7 @@ if __name__ == "__main__":
     plot_data('20220416', env_name, map_name, 'pass3_rs', 'hie_iqrm2', 'orange')
     plot_data('20220419', env_name, map_name, 'pass4', 'hie_iqrm2', 'blue')
     plot_data('20220419', env_name, map_name, 'pass4_rs', 'hie_iqrm2', 'purple')
+    plot_data('20220502', env_name, map_name, 'pass', 'hie_iqrm_3L', 'yellow')
 
 
 
