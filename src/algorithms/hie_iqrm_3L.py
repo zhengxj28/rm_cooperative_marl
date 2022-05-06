@@ -10,7 +10,7 @@ from itertools import permutations
 class Step_Counter:
     def __init__(self, tester):
         self.max_episode_length = tester.learning_params.max_timesteps_per_task
-        self.max_option_length = tester.max_option_length
+        self.max_option_length = [tester.max_option_length, self.max_episode_length]
         self.step = 0  # episode_step
         self.tau = [0, 0]  # tau[k] is option_step used for updating level-(k+1) Q-functions
 
@@ -22,9 +22,9 @@ class Step_Counter:
     def initialize_tau(self, level):
         self.tau[level-1] = 0
 
-    def is_option_terminal(self):
+    def is_option_terminal(self, level):
         episode_terminal = (self.step >= self.max_episode_length)
-        option_terminal = (self.tau[-1] >= self.max_option_length)
+        option_terminal = (self.tau[level-1] >= self.max_option_length[level-1])
         return episode_terminal or option_terminal
 
     def is_episode_terminal(self):
@@ -63,26 +63,26 @@ def run_qlearning_task(tester,
     for i in range(num_agents):
         agent_list[i].initialize_reward_machine()
 
-    # max_episode_length = learning_params.max_timesteps_per_task
-
     env = load_testing_env(tester)
     step_counter = Step_Counter(tester)
 
     # Starting interaction with the environment
-    while not (step_counter.is_episode_terminal() or env.is_terminal()):
+    while not (step_counter.is_episode_terminal() or env.is_terminal() or tester.stop_learning()):
+        for _l1_controller in l1_controller_list:
+            _l1_controller.initialize_reward_machine()
         step_counter.initialize_tau(level=2)
         o_l2 = l2_controller.get_next_option(-1.0, learning_params)
         l1_controller = l1_controller_list[o_l2]
         G_l2 = 0  # cumulative discounted reward of level-2
         u_start_l2 = l2_controller.u
-        while not (step_counter.is_option_terminal() or env.is_terminal()):
+        while not (step_counter.is_option_terminal(level=2) or env.is_terminal()):
             step_counter.initialize_tau(level=1)
             o_l1 = l1_controller.get_next_option(-1.0, learning_params)
             for ag_id in range(num_agents):
                 agent_list[ag_id].set_rm(rm_id=o_l1[ag_id])
             G_l1 = 0  # cumulative discounted reward of level-1
             u_start_l1 = l1_controller.u
-            while not (step_counter.is_option_terminal() or env.is_terminal()):
+            while not (step_counter.is_option_terminal(level=1) or env.is_terminal()):
                 # Perform a team step
                 s = env.get_state()
                 a = np.array([agent_list[i].get_next_action(s[i], epsilon, learning_params) for i in range(num_agents)])
@@ -119,9 +119,9 @@ def run_qlearning_task(tester,
                 l1_controller.update_q_function(u_start_l1, o_l1, G_l1, step_counter.tau[0], learning_params)
                 # get l2_label by termination of rms of l1_controller_list
                 l2_label = list()
-                for l1_controller in l1_controller_list:
-                    if l1_controller.is_terminal():
-                        l2_label.append(l1_controller.tag)
+                for _l1_controller in l1_controller_list:
+                    if _l1_controller.is_terminal():
+                        l2_label.append(_l1_controller.tag)
                 # update l2_controller
                 u_l2_old = l2_controller.u
                 is_l2_state_changed = l2_controller.update_controller(l2_label)
@@ -141,25 +141,36 @@ def run_qlearning_task(tester,
             t_init = time.time()
             step = tester.get_current_step()
 
-            # l1_controller_list_copy = list()
-            # agent_list_copy = list()
-            #
-            # # Need to create a copy of the agent for testing. If we pass the agent directly
-            # # mid-episode to the test function, the test will reset the world-state and reward machine
-            # # state before the training episode has been completed.
-            # for i in range(num_agents):
-            #     actions = agent_list[i].actions
-            #     agent_id = agent_list[i].agent_id
-            #     num_states = agent_list[i].num_states
-            #     local_event_set = env.event_set_of_agents[i]
-            #     agent_copy = Agent(local_event_set, num_states, actions, agent_id)
-            #     # Pass only the q-function by reference so that the testing updates the original agent's q-function.
-            #     agent_copy.q = agent_list[i].q
-            #     agent_list_copy.append(agent_copy)
-            # controller_copy = L1_Controller(tester.rm_test_file, controller.num_rm_list, agent_list_copy)
-            # controller_copy.q = controller.q
+            # Need to create a copy of the agent for testing. If we pass the agent directly
+            # mid-episode to the test function, the test will reset the world-state and reward machine
+            # state before the training episode has been completed.
+
+            agent_list_copy = list()
+            for i in range(num_agents):
+                actions = agent_list[i].actions
+                agent_id = agent_list[i].agent_id
+                num_states = agent_list[i].num_states
+                local_event_set = env.event_set_of_agents[i]
+                agent_copy = Agent(local_event_set, num_states, actions, agent_id)
+                # Pass only the q-function by reference so that the testing updates the original agent's q-function.
+                agent_copy.q = agent_list[i].q
+                agent_list_copy.append(agent_copy)
+
+            l1_controller_list_copy = list()
+            for controller in l1_controller_list:
+                controller_copy = L1_Controller(rm_file_name=controller.rm_file_name,
+                                                proposition=controller.tag,
+                                                ag_group_list=controller.ag_group_list,
+                                                num_rm_list=controller.num_rm_list,
+                                                agent_list=agent_list_copy)
+                controller_copy.q = controller.q
+                l1_controller_list_copy.append(controller_copy)
+
+            l2_rm_file_name = get_rm_file_name(tester, level=2, proposition="team")
+            l2_controller_copy = L2_Controller(l2_rm_file_name, num_agents)
+            l2_controller_copy.q = l2_controller.q
             # Run a test of the performance of the agents
-            testing_reward, trajectory, testing_steps = run_test(l2_controller,
+            testing_reward, trajectory, testing_steps = run_test(l2_controller_copy,
                                                                  l1_controller_list,
                                                                  agent_list,
                                                                  tester,
@@ -191,18 +202,19 @@ def run_qlearning_task(tester,
             if len(tester.steps) == 0 or tester.steps[-1] < step:
                 tester.steps.append(step)
 
-        # If each agent has completed its task, reset it to its initial state.
-        if all(agent.is_task_complete for agent in agent_list):
-            for i in range(num_agents):
-                agent_list[i].initialize_reward_machine()
-
-            # Make sure we've run at least the minimum number of training steps before breaking the loop
-            if tester.stop_task(step_counter.step):
-                break
-
-        # checking the steps time-out
-        if tester.stop_learning():
+            # break after test
             break
+
+        # # If each agent has completed its task, reset it to its initial state.
+        # if all(agent.is_task_complete for agent in agent_list):
+        #     for i in range(num_agents):
+        #         agent_list[i].initialize_reward_machine()
+        #
+        #     # Make sure we've run at least the minimum number of training steps before breaking the loop
+        #     if tester.stop_task(step_counter.step):
+        #         break
+
+
 
 
 def run_test(l2_controller,
@@ -253,18 +265,20 @@ def run_test(l2_controller,
 
     # Starting interaction with the environment
     while not (step_counter.is_episode_terminal() or testing_env.is_terminal()):
+        for _l1_controller in l1_controller_list:
+            _l1_controller.initialize_reward_machine()
         step_counter.initialize_tau(level=2)
         o_l2 = l2_controller.get_next_option(-1.0, learning_params)
         l1_controller = l1_controller_list[o_l2]
         print("L2 OPTION:", l1_controller.tag, l1_controller.ag_group_list)
-        while not (step_counter.is_option_terminal() or testing_env.is_terminal()):
+        while not (step_counter.is_option_terminal(level=2) or testing_env.is_terminal()):
             step_counter.initialize_tau(level=1)
             o_l1 = l1_controller.get_next_option(-1.0, learning_params)
             print("L1 OPTION:", [agent_list[ag_id].avail_rms[o_l1[ag_id]].tag for ag_id in
                                  range(len(o_l1))])  # show which sub-rm is executed
             for ag_id in range(num_agents):
                 agent_list[ag_id].set_rm(rm_id=o_l1[ag_id])
-            while not (step_counter.is_option_terminal() or testing_env.is_terminal()):
+            while not (step_counter.is_option_terminal(level=1) or testing_env.is_terminal()):
                 # Perform a team step
                 s_team = testing_env.get_state()
                 for i in range(num_agents):
@@ -283,9 +297,9 @@ def run_test(l2_controller,
                     break
             # get l2_label by termination of rms of l1_controller_list
             l2_label = list()
-            for l1_controller in l1_controller_list:
-                if l1_controller.is_terminal():
-                    l2_label.append(l1_controller.tag)
+            for _l1_controller in l1_controller_list:
+                if _l1_controller.is_terminal():
+                    l2_label.append(_l1_controller.tag)
             # update l2_controller
             is_l2_state_changed = l2_controller.update_controller(l2_label)
             if is_l2_state_changed:

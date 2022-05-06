@@ -51,7 +51,7 @@ for p in permutations([1, 2, 3]):
 # print("(2, 1, (), %.1f)" % r_neg)
 # print("(3, 4, ('r1','r2','r3',), %.1f)" % r_plus)
 
-########## pass_room/4button3agent/passteam2 #########
+########## pass_room/4button3agent/pass2team #########
 # r_neg, r_mid, r_plus = -0.1, 0.1, 1
 # for p in permutations([1, 2, 3]):
 #     i, j, k = p
@@ -84,7 +84,7 @@ for p in permutations([1, 2, 3]):
 #     print("(2, 1, ('b%d','d%d','r%d'), %.1f)" % (i, k, k, r_neg))
 #     print("(2, 1, ('r%d''d%d',), %.1f)" % (k, k, r_neg))
 
-########## pass_room/4button3agent/passteam4#########
+########## pass_room/4button3agent/pass4team#########
 # r_neg, r_mid, r_plus = 0, 0, 1
 # for p in permutations([1, 2, 3]):
 #     i, j, k = p
