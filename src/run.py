@@ -10,7 +10,7 @@ show_trajectory = False
 if __name__ == "__main__":
     random.seed(0)
     start_time = time.time()
-    independent_trail_times = 1  # Number of separate trials to run the algorithm for
+    independent_trail_times = 10  # Number of separate trials to run the algorithm for
     # num_agents = 3  # This will be automatically set to 3 for buttons experiment (max 10)
 
     # env_name='buttons'

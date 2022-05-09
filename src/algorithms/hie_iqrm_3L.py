@@ -87,8 +87,9 @@ def run_qlearning_task(tester,
                 s = env.get_state()
                 a = np.array([agent_list[i].get_next_action(s[i], epsilon, learning_params) for i in range(num_agents)])
                 # trajectory.append({'s' : np.array(s_team, dtype=int), 'a' : np.array(a_team, dtype=int), 'u_team': np.array(u_team, dtype=int), 'u': int(testing_env.u)})
-                r, l, s_new = env.environment_step(a)
-                G_l1 = math.pow(tester.learning_params.gamma_controller, step_counter.tau[0]) * r + G_l1
+                _, l, s_new = env.environment_step(a)
+                r_l1 = l1_controller.get_reward(l)
+                G_l1 = math.pow(tester.learning_params.gamma_controller, step_counter.tau[0]) * r_l1 + G_l1
                 for ag_id in range(num_agents):
                     agent = agent_list[ag_id]
                     agent.update_agent(label=l)  # update RM state of this agent
@@ -123,11 +124,9 @@ def run_qlearning_task(tester,
                     if _l1_controller.is_terminal():
                         l2_label.append(_l1_controller.tag)
                 # update l2_controller
-                u_l2_old = l2_controller.u
-                is_l2_state_changed = l2_controller.update_controller(l2_label)
-                u_l2_new = l2_controller.u
-                r_l2 = l2_controller.rm.get_reward(u_l2_old, u_l2_new)
+                r_l2 = l2_controller.get_reward(l2_label)
                 G_l2 = math.pow(tester.learning_params.gamma_controller, step_counter.tau[1]) * r_l2 + G_l2
+                is_l2_state_changed = l2_controller.update_controller(l2_label)
                 if is_l2_state_changed:
                     break
             else:  # start test

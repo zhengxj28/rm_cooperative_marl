@@ -343,6 +343,12 @@ class L1_Controller:
     def is_terminal(self):
         return self.rm.is_terminal_state(self.u)
 
+    def get_reward(self, label):
+        u1 = self.u
+        u2 = self.rm.get_next_state(u1, label)
+        return self.rm.get_reward(u1, u2)
+
+
 class L2_Controller:
     """
     The high-level controller helps the agents choose their own
@@ -497,6 +503,11 @@ class L2_Controller:
             # Bellman update
             self.q[u_start][o] = (1 - alpha) * self.q[u_start][o] \
                                  + alpha * (G + math.pow(gamma, tau) * self.q[u_new].max())
+
+    def get_reward(self, label):
+        u1 = self.u
+        u2 = self.rm.get_next_state(u1, label)
+        return self.rm.get_reward(u1, u2)
 
 
 
