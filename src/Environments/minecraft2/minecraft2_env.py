@@ -261,6 +261,9 @@ class MultiAgentMineCraft2Env:
     def get_state(self):
         return self.s
 
+    def is_terminal(self):
+        return self.reward_machine.is_terminal_state(self.u)
+
     def get_next_state(self, s, a, agent_id):  # get next state for single agent
         """
          Get the next state in the environment given action a is taken from state s.

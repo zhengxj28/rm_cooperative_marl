@@ -42,7 +42,7 @@ def run_qlearning_task(epsilon,
     env = load_testing_env(tester)
 
     steps = 0
-    while steps < max_episode_length and not env.reward_machine.is_terminal_state(env.u):
+    while steps < max_episode_length and not env.is_terminal():
         # choose the best rm for each agent by controller
         o = controller.get_next_option(epsilon, learning_params)
         for ag_id in range(num_agents):
@@ -51,7 +51,7 @@ def run_qlearning_task(epsilon,
         G = 0  # cumulative discounted team reward
         tau = 0
         u_start = controller.u  # store current state of controller
-        while (tau < tester.max_option_length) and not env.reward_machine.is_terminal_state(env.u):
+        while (tau < tester.max_option_length) and not env.is_terminal():
             # Perform a q-learning step.
             s = env.get_state()
             a = np.array([agent_list[i].get_next_action(s[i], epsilon, learning_params) for i in range(num_agents)])
@@ -112,7 +112,7 @@ def run_qlearning_task(epsilon,
                 # Pass only the q-function by reference so that the testing updates the original agent's q-function.
                 agent_copy.q = agent_list[i].q
                 agent_list_copy.append(agent_copy)
-            controller_copy = High_Controller(tester.rm_test_file, controller.num_rm_list, agent_list_copy)
+            controller_copy = High_Controller(tester.rm_test_file, controller.dim_option, agent_list_copy)
             controller_copy.q = controller.q
             # Run a test of the performance of the agents
             testing_reward, trajectory, testing_steps = run_test(controller_copy,

@@ -191,7 +191,7 @@ class High_Controller:
     subtask (rm) properly to complete the whole team task efficiently.
     """
 
-    def __init__(self, rm_file_name, num_rm_list, agent_list):
+    def __init__(self, num_option_list, agent_list):
         """
         Initialize agent object.
 
@@ -199,58 +199,48 @@ class High_Controller:
         ----------
         rm_file_name : str
             File path pointing to the reward machine of team task.
-        num_rm_list : list
+        num_option_list : list
             Num of available rm of each agent,
         """
-        self.rm_file_name = rm_file_name  # team task
-        self.rm = SparseRewardMachine(self.rm_file_name)
 
-        self.u = self.rm.get_initial_state()
-        self.local_propositions = self.rm.get_propositions()
-
-        self.num_agents = len(num_rm_list)
-        self.dim_option = num_rm_list
+        self.num_agents = len(num_option_list)
+        self.dim_option = num_option_list
 
         """
         Create a list of the dimension of high-level q-function
         Let N be num_agents, O_i is num_rm of agent i, then the shape is UxO1X...XON
         each option is the rm tuple of agents: o=(rm1,rm2,...,rmN)
         """
-        q_shape = [len(self.rm.U), ] + num_rm_list
-        self.q = np.zeros(q_shape)  # for softmax selection
-        # self.q = np.ones(q_shape)  # for epsilon-greedy
-        self.num_options = self.q[0].size  # number of all possible options
+        self.num_options = np.zeros(num_option_list).size  # dimension of option
+        # self.q = None  # TODO: use dqn, input joint state:s output: option
+        self.q = np.zeros(num_option_list)  # for debug only
         self.is_task_complete = 0
 
-        # action_mask_matrix[u][o]=1 iff option o causes rm transit to another state u'!=u
-        # action_mask_matrix[u][o]=0 iff rm does not transit to another state
-        self.action_mask_matrix = np.ones(q_shape, dtype=int)
-        for u in self.rm.U:
-            for o_index in range(self.num_options):
-                o = np.unravel_index(o_index, self.dim_option)
-                events = set()  # events of all agent under option o
-                for ag_id in range(self.num_agents):
-                    local_event = set(agent_list[ag_id].rm_id2event[o[ag_id]])
-                    events = events.union(local_event)
-                events = tuple(sorted(list(events)))
-                if self.rm.get_next_state(u, events) == u:
-                    self.action_mask_matrix[u][o] = 0
+        self.option2event = dict()
+        for o_index in range(self.num_options):
+            o = np.unravel_index(o_index, self.dim_option)
+            events = set()  # events of all agent under option o
+            for ag_id in range(self.num_agents):
+                local_event = set(agent_list[ag_id].rm_id2event[o[ag_id]])
+                events = events.union(local_event)
+            events = tuple(sorted(list(events)))
+            self.option2event[o] = events
 
-    def initialize_reward_machine(self):
-        """
-        Reset the state of the reward machine to the initial state and reset task status.
-        """
-        self.u = self.rm.get_initial_state()
-        self.is_task_complete = 0
 
-    def is_local_event_available(self, label):
-        if label:  # Only try accessing the first event in label if it exists
-            event = label[0]
-            return self.rm.is_event_available(self.u, event)
-        else:
-            return False
+        # action_mask_matrix[o]=1 iff event of option o is possible
+        # action_mask_matrix[o]=0 iff event impossible
+        self.action_mask_matrix = np.ones(self.dim_option, dtype=int)
+        # for o_index in range(self.num_options):
+        #     o = np.unravel_index(o_index, self.dim_option)
+        #     events = set()  # events of all agent under option o
+        #     for ag_id in range(self.num_agents):
+        #         local_event = set(agent_list[ag_id].rm_id2event[o[ag_id]])
+        #         events = events.union(local_event)
+        #     events = tuple(sorted(list(events)))
+        #     if events in :
+        #         self.action_mask_matrix[o] = 0
 
-    def get_next_option(self, epsilon, learning_params):
+    def get_next_option(self, s, epsilon, learning_params):
         """
         Return the action next action selected by the agent.
 
@@ -265,18 +255,8 @@ class High_Controller:
         T = learning_params.T_controller  # temperature of softmax
         if random.random() < epsilon:
             weight = np.ones(self.dim_option)
-            # o = []
-            # for i in range(self.num_agents):
-            #     o.append(random.choice([id for id in range(self.num_rm_list[i])]))
         else:
-            # epsilon-greedy implementation
-            # o = np.unravel_index(self.q[self.u].argmax(), self.q[self.u].shape)
-
-            # softmax implementation
-            weight = np.exp(self.q[self.u, :] * T)
-
-        # action mask, eliminate forbidden option
-        weight = np.multiply(weight, self.action_mask_matrix[self.u, :])
+            weight = np.exp(self.q[:] * T)  # TODO: use DQN, input s, output q[s,:]
 
         pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
         pr = np.reshape(pr, [pr.size])  # reshape to 1d array
@@ -294,28 +274,20 @@ class High_Controller:
 
         return list(o)
 
-    def update_controller(self, label):
+    def is_option_terminal(self, o, label):
         """
         Update the state of reward machine after
         interacting with the environment.
 
         Parameters
         ----------
-        label : string
+        label : list
             Label returned by the MDP this step.
         """
+        o = tuple(o)
+        return self.option2event[o] == label
 
-        # Keep track of the RM location at the start of the
-        u2 = self.rm.get_next_state(self.u, label)
-        is_state_changed = (self.u != u2)
-        self.u = u2
-
-        # Moving to the next state
-        # Completed task. Set flag.
-        self.is_task_complete = self.rm.is_terminal_state(self.u)
-        return is_state_changed
-
-    def update_q_function(self, u_start, o, G, tau, learning_params):
+    def update_q_function(self, s_start, o, G, tau, s_new, learning_params):
         """
         Update the q function using the action, states, and reward value.
 
@@ -332,17 +304,18 @@ class High_Controller:
         learning_params : LearningParameters object
             Object storing parameters to be used in learning.
         """
-        alpha = learning_params.alpha_controller
-        gamma = learning_params.gamma_controller
-
-        o = tuple(o)
-        u_new = self.u
-        if self.rm.is_terminal_state(u_new):
-            self.q[u_start][o] = (1 - alpha) * self.q[u_start][o] + alpha * G
-        else:
-            # Bellman update
-            self.q[u_start][o] = (1 - alpha) * self.q[u_start][o] \
-                                 + alpha * (G + math.pow(gamma, tau) * self.q[u_new].max())
+        # TODO: DQN tau-step update
+        pass
+        # alpha = learning_params.alpha_controller
+        # gamma = learning_params.gamma_controller
+        #
+        # o = tuple(o)
+        # if self.rm.is_terminal_state(u_new):
+        #     self.q[s_start,o] = (1 - alpha) * self.q[s_start][o] + alpha * G
+        # else:
+        #     # Bellman update
+        #     self.q[s_start,o] = (1 - alpha) * self.q[s_start][o] \
+        #                          + alpha * (G + math.pow(gamma, tau) * self.q[s_new].max())
 
 
 if __name__ == '__main__':  # for debug only

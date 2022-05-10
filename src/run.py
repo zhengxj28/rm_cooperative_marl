@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     # env_name='buttons'
     # env_name = 'minecraft'
-    # env_name = 'minecraft2'
+    env_name = 'minecraft2'
 
     # map_name = '3A_map_0'  # 3 agents, traditional minecraft map
     # task_name = 'task3'
@@ -29,19 +29,19 @@ if __name__ == "__main__":
 
     # map_name = 'nav_map0'  # 3 agents navigate to a,b,c, no misdirection
     # map_name = 'nav_map1'  # 3 agents navigate to a,b,c, placed with misdirection
-    # map_name = 'nav_map2'  # 2 agents navigate to a,b, placed with misdirection
+    map_name = 'nav_map2'  # 2 agents navigate to a,b, placed with misdirection
     # map_name = 'nav_map3'  # 2 agents navigate to a,b, no misdirection
     # map_name = 'nav_map5'  # 5 agents navigate to a,b,c,d,e, placed with misdirection
 
-    # task_name = 'navigation'  # simple team rm
+    task_name = 'navigation'  # simple team rm
     # task_name = 'navigation_complex_rm'  # complex team rm, no rm projection
     # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection,
     # task_name = 'navigation_good_p'  # using good rm projection, telling each agent what to do
 
-    env_name = 'pass_room'
-    map_name = '4button3agent'
+    # env_name = 'pass_room'
+    # map_name = '4button3agent'
     # map_name = '8button5agent'
-    task_name = 'pass'
+    # task_name = 'pass'
     # task_name = 'pass_rs'
     # task_name = 'pass_rs2'
     # task_name = 'pass2'
@@ -61,7 +61,8 @@ if __name__ == "__main__":
     # alg_name = 'hie_iqrm'  # hierarchical iqrm
     # alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
     # alg_name = 'mul_hie_iqrm'  # multi-level hierarchical iqrm with option elimination & sub-rm generation
-    alg_name = 'hie_iqrm_3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
+    # alg_name = 'hie_iqrm_3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
+    alg_name = 'modular'  # HRL baseline
 
 
     print('num_times:', independent_trail_times)
@@ -146,6 +147,12 @@ if __name__ == "__main__":
         from algorithms.hie_iqrm_3L import run_hie_iqrm_3L_experiment
 
         run_hie_iqrm_3L_experiment(tester, independent_trail_times, show_print=True)
+    elif alg_name == 'modular':
+        print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
+        print("temperature of controller T_controller:", tester.learning_params.T_controller)
+        from algorithms.modular import run_modular_experiment
+
+        run_modular_experiment(tester, independent_trail_times, show_print=True)
     else:
         raise ValueError('No such algorithm: ' + alg_name)
 
