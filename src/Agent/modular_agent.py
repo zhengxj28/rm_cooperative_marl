@@ -319,8 +319,6 @@ class High_Controller:
         """
         self.buffer.push(s_start, o, G, s_new)
         if self.buffer.len() >= learning_params.buffer_size:
-            # TODO: epsilon greedy?
-            
             # TODO: hard update target step
             if self.learn_step % learning_params.target_network_update_freq == 0:
                 self.target_q.load_state_dict(self.q.state_dict())
