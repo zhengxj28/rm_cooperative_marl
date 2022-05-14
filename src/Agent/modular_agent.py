@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch import nn, optim
 from networks import QNet
+from buffer import ReplayBuffer
 
 
 class Agent:
@@ -217,10 +218,12 @@ class High_Controller:
         # self.q = None  # Done: use dqn, input joint state:s output: option
         self.q = QNet()  # TODO: init parameters @wzfyyds
         self.target_q = QNet()  # target network
+        self.learn_step = 0
         # self.q = np.zeros(num_option_list)  # for debug only
         self.is_task_complete = 0
+        self.buffer = ReplayBuffer(args.capacity)  # TODO: capacity
         self.loss_fn = nn.MSELoss()
-        self.optim = optim.Adam(self.q.parameters(), lr=args.lr)  # TODO: lr
+        self.optim = optim.Adam(self.q.parameters(), lr=args.lr)  # TODO: lr 
 
         self.option2event = dict()
         for o_index in range(self.num_options):
@@ -262,7 +265,7 @@ class High_Controller:
         if random.random() < epsilon:
             weight = np.ones(self.dim_option)
         else:
-            weight = np.exp(self.q[:] * T)  # TODO: use DQN, input s, output q[s,:]
+            weight = np.exp(self.q(s) * T)  # TODO: q(s) confirm
 
         pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
         pr = np.reshape(pr, [pr.size])  # reshape to 1d array
@@ -310,14 +313,25 @@ class High_Controller:
         learning_params : LearningParameters object
             Object storing parameters to be used in learning.
         """
-        # TODO: DQN tau-step update
-        q_eval = self.eval_net(s_start).gather(-1, o.unsqueeze(-1)).squeeze(-1)
-        q_next = self.target_net(s_new).detach()
-        q_target = G + gamma * torch.max(q_next, dim=-1)[0]
-        loss = self.loss_fn(q_eval, q_target)
-        self.optim.zero_grad()
-        self.backward()
-        self.optim.step()
+        self.buffer.push(s_start, o, G, s_new)
+        if self.buffer.len() >= args.capacity:
+            # TODO: epsilon greedy?
+            
+            # TODO: hard update target step
+            if self.learn_step % args.update_target == 0:
+                self.target_q.load_state_dict(self.q.state_dict())
+            self.learn_step += 1
+            
+            # sample from replay buffer
+            s_start, o, G, s_new = self.buffer.sample(args.batch_size)
+            # DQN tau-step update
+            q_eval = self.q(s_start).gather(-1, o.unsqueeze(-1)).squeeze(-1)
+            q_next = self.target_q(s_new).detach()
+            q_target = G + math.pow(gamma, tau) * torch.max(q_next, dim=-1)[0]
+            loss = self.loss_fn(q_eval, q_target)
+            self.optim.zero_grad()
+            self.backward()
+            self.optim.step()
 
         # alpha = learning_params.alpha_controller
         # gamma = learning_params.gamma_controller
