@@ -327,11 +327,11 @@ class High_Controller:
             self.learn_step += 1
             
             # sample from replay buffer
-            s_start, o, G, s_new = self.buffer.sample(args.batch_size)
+            s_start, o, G, s_new = self.buffer.sample(learning_params.batch_size)
             # DQN tau-step update
             q_eval = self.q(s_start).gather(-1, o.unsqueeze(-1)).squeeze(-1)
             q_next = self.target_q(s_new).detach()
-            q_target = G + math.pow(gamma, tau) * torch.max(q_next, dim=-1)[0]
+            q_target = G + math.pow(learning_params.gamma, tau) * torch.max(q_next, dim=-1)[0]
             loss = self.loss_fn(q_eval, q_target)
             self.optim.zero_grad()
             self.backward()
