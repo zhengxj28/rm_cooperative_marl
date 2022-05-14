@@ -4,6 +4,8 @@ import numpy as np
 import random, time, os, math
 import matplotlib.pyplot as plt
 import torch
+from torch import nn, optim
+from networks import QNet
 
 
 class Agent:
@@ -212,9 +214,13 @@ class High_Controller:
         each option is the rm tuple of agents: o=(rm1,rm2,...,rmN)
         """
         self.num_options = np.zeros(num_option_list).size  # dimension of option
-        # self.q = None  # TODO: use dqn, input joint state:s output: option
-        self.q = np.zeros(num_option_list)  # for debug only
+        # self.q = None  # Done: use dqn, input joint state:s output: option
+        self.q = QNet()  # TODO: init parameters @wzfyyds
+        self.target_q = QNet()  # target network
+        # self.q = np.zeros(num_option_list)  # for debug only
         self.is_task_complete = 0
+        self.loss_fn = nn.MSELoss()
+        self.optim = optim.Adam(self.q.parameters(), lr=args.lr)  # TODO: lr
 
         self.option2event = dict()
         for o_index in range(self.num_options):
@@ -305,7 +311,14 @@ class High_Controller:
             Object storing parameters to be used in learning.
         """
         # TODO: DQN tau-step update
-        pass
+        q_eval = self.eval_net(s_start).gather(-1, o.unsqueeze(-1)).squeeze(-1)
+        q_next = self.target_net(s_new).detach()
+        q_target = G + gamma * torch.max(q_next, dim=-1)[0]
+        loss = self.loss_fn(q_eval, q_target)
+        self.optim.zero_grad()
+        self.backward()
+        self.optim.step()
+
         # alpha = learning_params.alpha_controller
         # gamma = learning_params.gamma_controller
         #
