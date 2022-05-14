@@ -50,6 +50,15 @@ def minecraft2_config(num_times, task_name, map_name):
     learning_params.initial_epsilon = 0.1  # Set epsilon to zero to turn off epsilon-greedy exploration (only using boltzmann)
     learning_params.max_timesteps_per_task = testing_params.num_steps
 
+    ####### for deep learning ###############
+    learning_params.lr = 0.001
+    learning_params.hidden_dim = 64
+    learning_params.embedding_size = 64
+
+    learning_params.buffer_size = 64
+    learning_params.batch_size = 8
+    learning_params.target_network_update_freq = 50
+
     tester = Tester(learning_params, testing_params)
     tester.step_unit = step_unit
     tester.total_steps = 2000 * step_unit

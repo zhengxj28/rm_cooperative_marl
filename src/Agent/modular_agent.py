@@ -5,7 +5,7 @@ import random, time, os, math
 import matplotlib.pyplot as plt
 import torch
 from torch import nn, optim
-from networks import QNet
+from src.Agent.networks import QNet
 from buffer import ReplayBuffer
 
 
@@ -194,7 +194,7 @@ class High_Controller:
     subtask (rm) properly to complete the whole team task efficiently.
     """
 
-    def __init__(self, num_option_list, agent_list):
+    def __init__(self, num_option_list, agent_list, learning_params):
         """
         Initialize agent object.
 
@@ -208,7 +208,7 @@ class High_Controller:
 
         self.num_agents = len(num_option_list)
         self.dim_option = num_option_list
-
+        state_size = agent_list[0].num_states
         """
         Create a list of the dimension of high-level q-function
         Let N be num_agents, O_i is num_rm of agent i, then the shape is UxO1X...XON
@@ -216,14 +216,18 @@ class High_Controller:
         """
         self.num_options = np.zeros(num_option_list).size  # dimension of option
         # self.q = None  # Done: use dqn, input joint state:s output: option
-        self.q = QNet()  # TODO: init parameters @wzfyyds
+        self.q = QNet(input_dim=self.num_agents,
+                      hidden_dim=learning_params.hidden_dim,
+                      output_dim=self.num_options,
+                      state_size=state_size,
+                      embedding_size=learning_params.embedding_size)  # TODO: init parameters @wzfyyds
         self.target_q = QNet()  # target network
         self.learn_step = 0
         # self.q = np.zeros(num_option_list)  # for debug only
         self.is_task_complete = 0
-        self.buffer = ReplayBuffer(args.capacity)  # TODO: capacity
+        self.buffer = ReplayBuffer(learning_params.buffer_size)  # TODO: capacity
         self.loss_fn = nn.MSELoss()
-        self.optim = optim.Adam(self.q.parameters(), lr=args.lr)  # TODO: lr 
+        self.optim = optim.Adam(self.q.parameters(), lr=learning_params.lr)  # TODO: lr
 
         self.option2event = dict()
         for o_index in range(self.num_options):
@@ -314,11 +318,11 @@ class High_Controller:
             Object storing parameters to be used in learning.
         """
         self.buffer.push(s_start, o, G, s_new)
-        if self.buffer.len() >= args.capacity:
+        if self.buffer.len() >= learning_params.buffer_size:
             # TODO: epsilon greedy?
             
             # TODO: hard update target step
-            if self.learn_step % args.update_target == 0:
+            if self.learn_step % learning_params.target_network_update_freq == 0:
                 self.target_q.load_state_dict(self.q.state_dict())
             self.learn_step += 1
             

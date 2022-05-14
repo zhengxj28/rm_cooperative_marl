@@ -1,13 +1,13 @@
-
 class LearningParameters:
     def __init__(self, lr=0.001, max_timesteps_per_task=100000, buffer_size=50000,
-                print_freq=1, exploration_fraction=0.1, exploration_final_eps=0.02,
-                train_freq=1, batch_size=32, 
-                learning_starts=1000, gamma=0.99, target_network_update_freq=500,
-                tabular_case = False, use_double_dqn = False, use_random_maps = False,
-                prioritized_replay=False, prioritized_replay_alpha=0.6, prioritized_replay_beta0=0.4,
-                prioritized_replay_beta_iters=None, prioritized_replay_eps=1e-6,
-                num_hidden_layers=-1, num_neurons=-1):
+                 print_freq=1, exploration_fraction=0.1, exploration_final_eps=0.02,
+                 train_freq=1, batch_size=32,
+                 learning_starts=1000, gamma=0.99, target_network_update_freq=500,
+                 tabular_case=False, use_double_dqn=False, use_random_maps=False,
+                 prioritized_replay=False, prioritized_replay_alpha=0.6, prioritized_replay_beta0=0.4,
+                 prioritized_replay_beta_iters=None, prioritized_replay_eps=1e-6,
+                 num_hidden_layers=-1, num_neurons=-1,
+                 hidden_dim=64,embedding_size=64):
         """Parameters
         -------
         lr: float
@@ -73,3 +73,5 @@ class LearningParameters:
         # Network architecture
         self.num_hidden_layers = num_hidden_layers
         self.num_neurons = num_neurons
+        self.hidden_dim = hidden_dim
+        self.embedding_size = embedding_size

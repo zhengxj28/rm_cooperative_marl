@@ -285,7 +285,7 @@ def run_modular_experiment(tester,
             agent_i = Agent(local_event_set, testing_env.num_states, actions, i)
             agent_list.append(agent_i)
             num_rm_list.append(agent_i.num_rms)
-        controller = High_Controller(num_rm_list, agent_list)
+        controller = High_Controller(num_rm_list, agent_list, tester.learning_params)
         num_episodes = 0
 
         # Task loop
