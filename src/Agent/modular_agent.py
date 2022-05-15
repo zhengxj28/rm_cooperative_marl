@@ -4,9 +4,9 @@ import numpy as np
 import random, time, os, math
 import matplotlib.pyplot as plt
 import torch
-from torch import nn, optim
+from torch import nn, optim, Tensor
 from src.Agent.networks import QNet
-from buffer import ReplayBuffer
+from src.Agent.buffer import ReplayBuffer
 
 
 class Agent:
@@ -208,7 +208,7 @@ class High_Controller:
 
         self.num_agents = len(num_option_list)
         self.dim_option = num_option_list
-        state_size = agent_list[0].num_states
+        self.state_size = agent_list[0].num_states
         """
         Create a list of the dimension of high-level q-function
         Let N be num_agents, O_i is num_rm of agent i, then the shape is UxO1X...XON
@@ -219,9 +219,13 @@ class High_Controller:
         self.q = QNet(input_dim=self.num_agents,
                       hidden_dim=learning_params.hidden_dim,
                       output_dim=self.num_options,
-                      state_size=state_size,
+                      state_size=self.state_size,
                       embedding_size=learning_params.embedding_size)  # TODO: init parameters @wzfyyds
-        self.target_q = QNet()  # target network
+        self.target_q = QNet(input_dim=self.num_agents,
+                      hidden_dim=learning_params.hidden_dim,
+                      output_dim=self.num_options,
+                      state_size=self.state_size,
+                      embedding_size=learning_params.embedding_size)
         self.learn_step = 0
         # self.q = np.zeros(num_option_list)  # for debug only
         self.is_task_complete = 0
@@ -269,7 +273,8 @@ class High_Controller:
         if random.random() < epsilon:
             weight = np.ones(self.dim_option)
         else:
-            weight = np.exp(self.q(s) * T)  # TODO: q(s) confirm
+            s = np.expand_dims(s, 0)
+            weight = np.exp(self.q(s).detach().numpy() * T)  # TODO: q(s) confirm
 
         pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
         pr = np.reshape(pr, [pr.size])  # reshape to 1d array
@@ -327,12 +332,14 @@ class High_Controller:
             # sample from replay buffer
             s_start, o, G, s_new = self.buffer.sample(learning_params.batch_size)
             # DQN tau-step update
+            o = torch.LongTensor([i[0]*3+i[1] for i in o])
+
             q_eval = self.q(s_start).gather(-1, o.unsqueeze(-1)).squeeze(-1)
             q_next = self.target_q(s_new).detach()
-            q_target = G + math.pow(learning_params.gamma, tau) * torch.max(q_next, dim=-1)[0]
+            q_target = torch.tensor(G) + math.pow(learning_params.gamma, tau) * torch.max(q_next, dim=-1)[0]
             loss = self.loss_fn(q_eval, q_target)
             self.optim.zero_grad()
-            self.backward()
+            loss.backward()
             self.optim.step()
 
         # alpha = learning_params.alpha_controller
