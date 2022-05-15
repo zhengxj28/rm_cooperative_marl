@@ -1,10 +1,10 @@
-from src.Environments.buttons.buttons_env import ButtonsEnv
-from src.Environments.buttons.multi_agent_buttons_env import MultiAgentButtonsEnv
+from Environments.buttons.buttons_env import ButtonsEnv
+from Environments.buttons.multi_agent_buttons_env import MultiAgentButtonsEnv
 # from src.Environments.rendezvous.gridworld_env import GridWorldEnv
 # from src.Environments.rendezvous.multi_agent_gridworld_env import MultiAgentGridWorldEnv
-from src.Environments.minecraft.minecraft_env import MultiAgentMineCraftEnv
-from src.Environments.minecraft2.minecraft2_env import MultiAgentMineCraft2Env
-from src.Environments.pass_room.pass_room_env import PassRoomEnv
+from Environments.minecraft.minecraft_env import MultiAgentMineCraftEnv
+from Environments.minecraft2.minecraft2_env import MultiAgentMineCraft2Env
+from Environments.pass_room.pass_room_env import PassRoomEnv
 
 
 def load_testing_env(tester):

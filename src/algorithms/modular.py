@@ -1,8 +1,8 @@
 import numpy as np
 import random, time, os, math
-from src.Agent.modular_agent import Agent, High_Controller
-from src.tester.tester import Tester
-from src.Environments.load_env import *
+from Agent.modular_agent import Agent, High_Controller
+from tester.tester import Tester
+from Environments.load_env import *
 import matplotlib.pyplot as plt
 
 
@@ -120,7 +120,7 @@ def run_qlearning_task(epsilon,
                 # Pass only the q-function by reference so that the testing updates the original agent's q-function.
                 agent_copy.q = agent_list[i].q
                 agent_list_copy.append(agent_copy)
-            controller_copy = High_Controller(controller.dim_option, agent_list_copy)
+            controller_copy = High_Controller(controller.dim_option, agent_list_copy, learning_params)
             controller_copy.q = controller.q
             # Run a test of the performance of the agents
             testing_reward, trajectory, testing_steps = run_test(controller_copy,
@@ -239,7 +239,7 @@ def run_test(controller,
         print('Reward of {} achieved in {} steps. Current step: {} of {}'.format(testing_reward, steps,
                                                                                  tester.current_step,
                                                                                  tester.total_steps))
-    from src.run import show_trajectory
+    from run import show_trajectory
     if show_trajectory:
         testing_env.show()
     return testing_reward, trajectory, steps

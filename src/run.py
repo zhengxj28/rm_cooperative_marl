@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
         tester = minecraft_config(independent_trail_times, task_name)  # Get test object from config script
     elif env_name == 'minecraft2':
-        from src.config.minecraft2_config import minecraft2_config
+        from config.minecraft2_config import minecraft2_config
 
         tester = minecraft2_config(independent_trail_times, task_name, map_name)  # Get test object from config script
     elif env_name == 'pass_room':

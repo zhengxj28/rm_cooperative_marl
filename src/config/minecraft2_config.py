@@ -1,6 +1,6 @@
-from src.tester.tester import Tester
-from src.tester.tester_params import TestingParameters
-from src.tester.learning_params import LearningParameters
+from tester.tester import Tester
+from tester.tester_params import TestingParameters
+from tester.learning_params import LearningParameters
 import os
 
 
@@ -17,7 +17,7 @@ def minecraft2_config(num_times, task_name, map_name):
     max_num_agents = 5
     base_file_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 
-    joint_rm_file = os.path.join(base_file_path, 'reward_machines', 'minecraft2', map_name, task_name + 'team.txt')
+    joint_rm_file = 'C:\\Users\\hanli\\Repo\\rm_cooperative_marl\\reward_machines\\minecraft2\\nav_map2\\navigationteam.txt' 
 
     local_rm_files = []
     for i in range(max_num_agents):
@@ -53,7 +53,7 @@ def minecraft2_config(num_times, task_name, map_name):
     ####### for deep learning ###############
     learning_params.lr = 0.001
     learning_params.hidden_dim = 64
-    learning_params.embedding_size = 64
+    learning_params.embedding_size = 64  # BUG:
 
     learning_params.buffer_size = 64
     learning_params.batch_size = 8
@@ -76,7 +76,7 @@ def minecraft2_config(num_times, task_name, map_name):
     env_settings = dict()
 
     parentDir = os.path.abspath(os.path.join(os.getcwd()))
-    env_settings['file_map'] = os.path.join(parentDir, 'Environments', 'minecraft2', 'maps', map_name + '.txt')
+    env_settings['file_map'] = "C:\\Users\\hanli\\Repo\\rm_cooperative_marl\\src\\Environments\\minecraft2\\maps\\nav_map2.txt"  # BUG:
 
     env_settings['consider_night'] = False
     env_settings['p'] = 0.98

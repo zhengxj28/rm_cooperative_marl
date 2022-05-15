@@ -1,5 +1,5 @@
 import torch
-from torch import nn, optim
+from torch import nn, optim, LongTensor
 import torch.nn.functional as F
 
 
@@ -7,13 +7,15 @@ class QNet(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, state_size, embedding_size, one_hot=True):
         super(QNet, self).__init__()
         self.one_hot = one_hot
+        self.state_size = state_size
         self.embedding = nn.Linear(input_dim*state_size, embedding_size)
         self.fc1 = nn.Linear(embedding_size, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x):
+        x = LongTensor(x)
         if self.one_hot:
-            ones = torch.eye(state_size)
+            ones = torch.eye(self.state_size)
             x = torch.stack([ones.index_select(0, x[i]) for i in range(x.shape[0])])
             x = x.view(x.shape[0], -1)
         x = self.embedding(x)

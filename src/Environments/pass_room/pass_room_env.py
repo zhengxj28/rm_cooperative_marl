@@ -6,7 +6,7 @@ import sys, copy
 
 # sys.path.append('../')
 # sys.path.append('../../')
-from src.reward_machines.sparse_reward_machine import SparseRewardMachine
+from reward_machines.sparse_reward_machine import SparseRewardMachine
 
 """
 Enum with the actions that the agent can execute

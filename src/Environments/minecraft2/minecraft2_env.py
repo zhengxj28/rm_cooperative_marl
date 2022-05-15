@@ -6,7 +6,7 @@ import sys, copy
 
 # sys.path.append('../')
 # sys.path.append('../../')
-from src.reward_machines.sparse_reward_machine import SparseRewardMachine
+from reward_machines.sparse_reward_machine import SparseRewardMachine
 
 """
 Enum with the actions that the agent can execute
@@ -496,7 +496,7 @@ def play(map_name, task_name):
     parentDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir, os.pardir))
     rm_string = os.path.join(parentDir, 'reward_machines', 'minecraft2', map_name, task_name + 'team.txt')
     env_settings = {'p': 0.98,
-                    'file_map': os.path.abspath(os.path.join(os.getcwd(), 'maps', map_name + '.txt')),
+                    'file_map': "C:\\Users\\hanli\\Repo\\rm_cooperative_marl\\src\\Environments\\minecraft2\\maps\\nav_map2.txt",
                     'consider_night': False}
     game = MultiAgentMineCraft2Env(rm_string, env_settings)
     n = game.num_agents
