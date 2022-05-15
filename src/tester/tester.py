@@ -2,8 +2,9 @@ import numpy as np
 import time, os
 import matplotlib.pyplot as plt
 
+
 class Tester:
-    def __init__(self, learning_params, testing_params, min_steps = 1000, total_steps = 10000):
+    def __init__(self, learning_params, testing_params, min_steps=1000, total_steps=10000):
         """
         Parameters
         ----------

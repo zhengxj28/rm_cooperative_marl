@@ -120,7 +120,7 @@ def run_qlearning_task(epsilon,
                 # Pass only the q-function by reference so that the testing updates the original agent's q-function.
                 agent_copy.q = agent_list[i].q
                 agent_list_copy.append(agent_copy)
-            controller_copy = High_Controller(controller.dim_option, agent_list_copy)
+            controller_copy = High_Controller(controller.dim_option, agent_list_copy,learning_params)
             controller_copy.q = controller.q
             # Run a test of the performance of the agents
             testing_reward, trajectory, testing_steps = run_test(controller_copy,

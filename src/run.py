@@ -6,6 +6,25 @@ import numpy as np
 
 show_trajectory = False
 
+def print_params(tester):
+    learning_params = tester.learning_params
+    print('epsilon:', tester.learning_params.initial_epsilon)
+    print('decay_factor gamma:', tester.learning_params.gamma)
+    print('learning_rate alpha:', tester.learning_params.alpha)
+    print('temperature T:', tester.learning_params.T)
+
+    ##### for HRL methods ##########
+    print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
+    print("temperature of controller T_controller:", tester.learning_params.T_controller)
+    print("max_option_length", tester.max_option_length)
+
+    #### for deep learning #########
+    print("lr of network:", learning_params.lr)
+    print("hidden_dim:", learning_params.hidden_dim)
+    print("embedding_size:", learning_params.embedding_size)
+    print("buffer_size", learning_params.buffer_size)
+    print("batch_size", learning_params.batch_size)
+    print("target_network_update_freq:", learning_params.target_network_update_freq)
 
 if __name__ == "__main__":
     random.seed(0)
@@ -64,12 +83,12 @@ if __name__ == "__main__":
     # alg_name = 'hie_iqrm_3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
     alg_name = 'modular'  # HRL baseline
 
-
     print('num_times:', independent_trail_times)
     print('env_name:', env_name)
     print('map_name:', map_name)
     print('task_name:', task_name)
     print('alg_name:', alg_name)
+
 
     if env_name == 'rendezvous':
         from src.config.rendezvous_config import rendezvous_config
@@ -94,10 +113,7 @@ if __name__ == "__main__":
     else:
         raise ValueError('No such environment: ' + env_name)
 
-    print('epsilon:', tester.learning_params.initial_epsilon)
-    print('decay_factor gamma:', tester.learning_params.gamma)
-    print('learning_rate alpha:', tester.learning_params.alpha)
-    print('temperature T:', tester.learning_params.T)
+    print_params(tester)
 
     if alg_name == 'cqrm':
         from algorithms.cqrm import run_cqrm_experiment
@@ -124,32 +140,23 @@ if __name__ == "__main__":
 
         run_iqrm_experiment(tester, independent_trail_times, show_print=True)
     elif alg_name == 'hie_iqrm':
-        print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
-        print("temperature of controller T_controller:", tester.learning_params.T_controller)
+
         from algorithms.hie_iqrm import run_hie_iqrm_experiment
 
         run_hie_iqrm_experiment(tester, independent_trail_times, show_print=True)
     elif alg_name == 'hie_iqrm2':
-        print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
-        print("temperature of controller T_controller:", tester.learning_params.T_controller)
         from algorithms.hie_iqrm2 import run_hie_iqrm2_experiment
 
         run_hie_iqrm2_experiment(tester, independent_trail_times, show_print=True)
     elif alg_name == 'mul_hie_iqrm':
-        print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
-        print("temperature of controller T_controller:", tester.learning_params.T_controller)
         from algorithms.mul_hie_iqrm import run_mul_hie_iqrm_experiment
 
         run_mul_hie_iqrm_experiment(tester, independent_trail_times, show_print=True)
     elif alg_name == 'hie_iqrm_3L':
-        print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
-        print("temperature of controller T_controller:", tester.learning_params.T_controller)
         from algorithms.hie_iqrm_3L import run_hie_iqrm_3L_experiment
 
         run_hie_iqrm_3L_experiment(tester, independent_trail_times, show_print=True)
     elif alg_name == 'modular':
-        print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
-        print("temperature of controller T_controller:", tester.learning_params.T_controller)
         from algorithms.modular import run_modular_experiment
 
         run_modular_experiment(tester, independent_trail_times, show_print=True)

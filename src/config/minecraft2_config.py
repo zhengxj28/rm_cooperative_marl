@@ -64,7 +64,7 @@ def minecraft2_config(num_times, task_name, map_name):
     tester.total_steps = 2000 * step_unit
     # tester.total_steps = 10 * step_unit  # for debug only
     tester.min_steps = 1
-    tester.max_option_length = 200
+    tester.max_option_length = 50
 
     tester.num_times = num_times
 
