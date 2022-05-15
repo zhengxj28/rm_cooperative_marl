@@ -52,12 +52,21 @@ def pass_room_config(num_times, task_name, map_name):
     learning_params.epsilon = learning_params.initial_epsilon
     learning_params.max_timesteps_per_task = testing_params.num_steps
 
+    ####### for deep learning ###############
+    learning_params.lr = 0.001
+    learning_params.hidden_dim = 64
+    learning_params.embedding_size = 64
+
+    learning_params.buffer_size = 64
+    learning_params.batch_size = 8
+    learning_params.target_network_update_freq = 50
+
     tester = Tester(learning_params, testing_params)
     tester.step_unit = step_unit
     tester.total_steps = 2000 * step_unit
     # tester.total_steps = 1 * step_unit  # for debug only
     tester.min_steps = 1
-    tester.max_option_length = 200
+    tester.max_option_length = 50
 
     tester.num_times = num_times
 

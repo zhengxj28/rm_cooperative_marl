@@ -18,6 +18,7 @@ def minecraft2_config(num_times, task_name, map_name):
     base_file_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 
     joint_rm_file = os.path.join(base_file_path, 'reward_machines', 'minecraft2', map_name, task_name + 'team.txt')
+    # joint_rm_file = os.path.join(base_file_path, 'reward_machines', 'minecraft2', map_name, task_name + 'env.txt')
 
     local_rm_files = []
     for i in range(max_num_agents):

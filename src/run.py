@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     # env_name='buttons'
     # env_name = 'minecraft'
-    env_name = 'minecraft2'
+    # env_name = 'minecraft2'
 
     # map_name = '3A_map_0'  # 3 agents, traditional minecraft map
     # task_name = 'task3'
@@ -48,19 +48,19 @@ if __name__ == "__main__":
 
     # map_name = 'nav_map0'  # 3 agents navigate to a,b,c, no misdirection
     # map_name = 'nav_map1'  # 3 agents navigate to a,b,c, placed with misdirection
-    map_name = 'nav_map2'  # 2 agents navigate to a,b, placed with misdirection
+    # map_name = 'nav_map2'  # 2 agents navigate to a,b, placed with misdirection
     # map_name = 'nav_map3'  # 2 agents navigate to a,b, no misdirection
     # map_name = 'nav_map5'  # 5 agents navigate to a,b,c,d,e, placed with misdirection
 
-    task_name = 'navigation'  # simple team rm
+    # task_name = 'navigation'  # simple team rm
     # task_name = 'navigation_complex_rm'  # complex team rm, no rm projection
-    # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection,
+    # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection
     # task_name = 'navigation_good_p'  # using good rm projection, telling each agent what to do
 
-    # env_name = 'pass_room'
-    # map_name = '4button3agent'
+    env_name = 'pass_room'
+    map_name = '4button3agent'
     # map_name = '8button5agent'
-    # task_name = 'pass'
+    task_name = 'pass'
     # task_name = 'pass_rs'
     # task_name = 'pass_rs2'
     # task_name = 'pass2'
@@ -88,7 +88,6 @@ if __name__ == "__main__":
     print('map_name:', map_name)
     print('task_name:', task_name)
     print('alg_name:', alg_name)
-
 
     if env_name == 'rendezvous':
         from src.config.rendezvous_config import rendezvous_config
