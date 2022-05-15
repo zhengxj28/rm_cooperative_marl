@@ -160,7 +160,7 @@ def run_qlearning_task(tester,
                 controller_copy = L1_Controller(rm_file_name=controller.rm_file_name,
                                                 proposition=controller.tag,
                                                 ag_group_list=controller.ag_group_list,
-                                                num_rm_list=controller.dim_option,
+                                                num_rm_list=controller.num_rm_list,
                                                 agent_list=agent_list_copy)
                 controller_copy.q = controller.q
                 l1_controller_list_copy.append(controller_copy)

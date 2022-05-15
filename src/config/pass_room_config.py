@@ -17,7 +17,8 @@ def pass_room_config(num_times, task_name, map_name):
     max_num_agents = 5
     base_file_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 
-    team_rm_file = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name, task_name + 'env.txt')
+    rm_test_file = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name, task_name + 'team.txt')
+    rm_env_file = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name, task_name + 'env.txt')
 
     ############## dqprm, iqrm, hie_iqrm methods, not used in hie_iqrm2, hie_iqrm_3L ##############################
     local_rm_files = []
@@ -70,7 +71,8 @@ def pass_room_config(num_times, task_name, map_name):
 
     tester.num_times = num_times
 
-    tester.rm_test_file = team_rm_file
+    tester.rm_test_file = rm_test_file
+    tester.rm_env_file = rm_env_file
     tester.rm_learning_file_list = local_rm_files
     tester.rm_learning_file_name_list = local_rm_files_name
 

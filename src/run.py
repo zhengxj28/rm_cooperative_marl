@@ -6,7 +6,7 @@ import numpy as np
 
 show_trajectory = False
 
-def print_params(tester):
+def print_params(tester, alg_name):
     learning_params = tester.learning_params
     print('epsilon:', tester.learning_params.initial_epsilon)
     print('decay_factor gamma:', tester.learning_params.gamma)
@@ -14,17 +14,19 @@ def print_params(tester):
     print('temperature T:', tester.learning_params.T)
 
     ##### for HRL methods ##########
-    print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
-    print("temperature of controller T_controller:", tester.learning_params.T_controller)
-    print("max_option_length", tester.max_option_length)
+    if alg_name in ['hie_iqrm','hie_iqrm2','hie_iqrm_3L','mul_hie_iqrm','modular']:
+        print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
+        print("temperature of controller T_controller:", tester.learning_params.T_controller)
+        print("max_option_length", tester.max_option_length)
 
     #### for deep learning #########
-    print("lr of network:", learning_params.lr)
-    print("hidden_dim:", learning_params.hidden_dim)
-    print("embedding_size:", learning_params.embedding_size)
-    print("buffer_size", learning_params.buffer_size)
-    print("batch_size", learning_params.batch_size)
-    print("target_network_update_freq:", learning_params.target_network_update_freq)
+    if alg_name in ['modular']:
+        print("lr of network:", learning_params.lr)
+        print("hidden_dim:", learning_params.hidden_dim)
+        print("embedding_size:", learning_params.embedding_size)
+        print("buffer_size", learning_params.buffer_size)
+        print("batch_size", learning_params.batch_size)
+        print("target_network_update_freq:", learning_params.target_network_update_freq)
 
 if __name__ == "__main__":
     random.seed(0)
@@ -34,7 +36,7 @@ if __name__ == "__main__":
 
     # env_name='buttons'
     # env_name = 'minecraft'
-    # env_name = 'minecraft2'
+    env_name = 'minecraft2'
 
     # map_name = '3A_map_0'  # 3 agents, traditional minecraft map
     # task_name = 'task3'
@@ -50,24 +52,24 @@ if __name__ == "__main__":
     # map_name = 'nav_map1'  # 3 agents navigate to a,b,c, placed with misdirection
     # map_name = 'nav_map2'  # 2 agents navigate to a,b, placed with misdirection
     # map_name = 'nav_map3'  # 2 agents navigate to a,b, no misdirection
-    # map_name = 'nav_map5'  # 5 agents navigate to a,b,c,d,e, placed with misdirection
+    map_name = 'nav_map5'  # 5 agents navigate to a,b,c,d,e, placed with misdirection
 
-    # task_name = 'navigation'  # simple team rm
+    task_name = 'navigation'  # simple team rm
     # task_name = 'navigation_complex_rm'  # complex team rm, no rm projection
     # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection
     # task_name = 'navigation_good_p'  # using good rm projection, telling each agent what to do
 
-    env_name = 'pass_room'
-    map_name = '4button3agent'
+    # env_name = 'pass_room'
+    # map_name = '4button3agent'
     # map_name = '8button5agent'
-    task_name = 'pass'
-    # task_name = 'pass_rs'
+    # task_name = 'pass'
+    # task_name = 'pass_rs'  # 4 states RM, worst performance
     # task_name = 'pass_rs2'
-    # task_name = 'pass2'
+    # task_name = 'pass2'  # 3 states RM, with back transitions
     # task_name = 'pass2_rs'
-    # task_name = 'pass3'
+    # task_name = 'pass3'  # 31 states RM, best performance
     # task_name = 'pass3_rs'
-    # task_name = 'pass4'
+    # task_name = 'pass4'  # 3 states RM, without back transitions
     # task_name = 'pass4_rs'
 
     ################## decide which algorithm to run ###############################
@@ -78,10 +80,10 @@ if __name__ == "__main__":
     # alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
     # alg_name = 'iqrm'  # independent qrm
     # alg_name = 'hie_iqrm'  # hierarchical iqrm
-    # alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
+    alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
     # alg_name = 'mul_hie_iqrm'  # multi-level hierarchical iqrm with option elimination & sub-rm generation
     # alg_name = 'hie_iqrm_3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
-    alg_name = 'modular'  # HRL baseline
+    # alg_name = 'modular'  # HRL baseline
 
     print('num_times:', independent_trail_times)
     print('env_name:', env_name)
@@ -112,7 +114,7 @@ if __name__ == "__main__":
     else:
         raise ValueError('No such environment: ' + env_name)
 
-    print_params(tester)
+    print_params(tester, alg_name)
 
     if alg_name == 'cqrm':
         from algorithms.cqrm import run_cqrm_experiment

@@ -12,13 +12,13 @@ def load_testing_env(tester):
         # testing_env = MultiAgentGridWorldEnv(tester.rm_test_file, tester.env_settings)
         raise ValueError('No such environment: ' + tester.experiment)
     elif tester.experiment == 'buttons':
-        testing_env = MultiAgentButtonsEnv(tester.rm_test_file, tester.env_settings)
+        testing_env = MultiAgentButtonsEnv(tester.rm_env_file, tester.env_settings)
     elif tester.experiment == 'minecraft':
-        testing_env = MultiAgentMineCraftEnv(tester.rm_test_file, tester.env_settings)
+        testing_env = MultiAgentMineCraftEnv(tester.rm_env_file, tester.env_settings)
     elif tester.experiment == 'minecraft2':
-        testing_env = MultiAgentMineCraft2Env(tester.rm_test_file, tester.env_settings)
+        testing_env = MultiAgentMineCraft2Env(tester.rm_env_file, tester.env_settings)
     elif tester.experiment == 'pass_room':
-        testing_env = PassRoomEnv(tester.rm_test_file, tester.env_settings)
+        testing_env = PassRoomEnv(tester.rm_env_file, tester.env_settings)
     else:
         raise ValueError('No such environment: ' + tester.experiment)
 
