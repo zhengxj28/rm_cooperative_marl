@@ -2,7 +2,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_multi_agent_results(plot_dict, color, label = ''):
+
+def plot_multi_agent_results(plot_dict, color, label='', fontsize=15):
     # def plot_multi_agent_results(tester, num_agents):
     """
     Plot the results stored in tester.results for each of the agents.
@@ -48,26 +49,33 @@ def plot_multi_agent_results(plot_dict, color, label = ''):
     plt.grid()
     plt.fill_between(steps, prc_50, prc_25, color=color, alpha=0.25)
     plt.fill_between(steps, prc_50, prc_75, color=color, alpha=0.25)
-    plt.ylabel('Testing Steps to Task Completion', fontsize=15)
-    plt.xlabel('Training Steps', fontsize=15)
+    plt.ylabel('Testing Steps to Task Completion', fontsize=fontsize)
+    plt.xlabel('Training Steps', fontsize=fontsize)
     plt.locator_params(axis='x', nbins=5)
 
 
 def plot_data(date, env_name, map_name, task_name, alg_name, color):
     parentDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir))
-    data_path = os.path.join(parentDir, 'rm_cooperative_marl_data', date, env_name+map_name)
-    file_name = os.path.join(data_path , task_name + alg_name + ".npy")
+    data_path = os.path.join(parentDir, 'rm_cooperative_marl_data', date, env_name + map_name)
+    file_name = os.path.join(data_path, task_name + alg_name + ".npy")
     plot_dict = np.load(file_name, allow_pickle=True).item()
-    plot_multi_agent_results(plot_dict, color, label=task_name+alg_name)
+    plot_multi_agent_results(plot_dict, color, label=task_name + alg_name, fontsize=10)
+
+
+def plot_data_final_version(date, env_name, map_name, task_name, alg_name, color, label):
+    parentDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir))
+    data_path = os.path.join(parentDir, 'rm_cooperative_marl_data', date, env_name + map_name)
+    file_name = os.path.join(data_path, task_name + alg_name + ".npy")
+    plot_dict = np.load(file_name, allow_pickle=True).item()
+    plot_multi_agent_results(plot_dict, color, label=label, fontsize=18)
 
 
 if __name__ == "__main__":
+    save_fig = True
     # plot_data('20211110', "buttons", "cqrm", 'purple')
     # plot_data('20211110',"buttons", "dqprm", 'blue')
     # plot_data('20211110',"buttons", "ihrl", 'red')
     # plot_data('20211110',"buttons", "iql", 'green')
-
-    save_fig = True
 
     # env_name = 'minecraft'
     # map_name = 'multiA_map_0'
@@ -138,24 +146,61 @@ if __name__ == "__main__":
     # plot_data('20220412', env_name, map_name, 'pass_rs', 'iqrm', 'yellow')
     # plot_data('20220412', env_name, map_name, 'pass_rs', 'hie_iqrm2', 'blue')
 
+    # env_name = 'pass_room'
+    # map_name = '4button3agent'
+    # title = '{}_{}'.format(env_name, map_name)
+    # plt.title(title)
+    # plot_data('20220416', env_name, map_name, 'pass2', 'hie_iqrm2', 'green')
+    # plot_data('20220416', env_name, map_name, 'pass2_rs', 'hie_iqrm2', 'lime')
+    # plot_data('20220416', env_name, map_name, 'pass3', 'hie_iqrm2', 'red')
+    # plot_data('20220416', env_name, map_name, 'pass3_rs', 'hie_iqrm2', 'orange')
+    # plot_data('20220419', env_name, map_name, 'pass4', 'hie_iqrm2', 'blue')
+    # plot_data('20220419', env_name, map_name, 'pass4_rs', 'hie_iqrm2', 'purple')
+    # plot_data('20220505', env_name, map_name, 'pass', 'hie_iqrm_3L', 'black')
+    # plot_data('20220506', env_name, map_name, 'pass', 'hie_iqrm_3L', 'yellow')
+
+    ########### final version ###############
+    plt.figure(figsize=(6, 7))
+    plt.clf()
+
+    # env_name = 'minecraft2'
+    # map_name = 'nav_map1'
+    # title = "Navigation 3 Agents"
+    # plt.title(title)
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'dqprm', 'yellow',label="DQPRM")
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'iqrm', 'blue',label="IQRM")
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'modular', 'green',label="Modular")
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'hie_iqrm2', 'red',label="MAHRM(ours)")
+
+    # env_name = 'minecraft2'
+    # map_name = 'nav_map2'
+    # title = "Navigation 2 Agents"
+    # plt.title(title)
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'dqprm', 'yellow',label="DQPRM")
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'iqrm', 'blue',label="IQRM")
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'modular', 'green',label="Modular")
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'hie_iqrm2', 'red',label="MAHRM(ours)")
+
+    # env_name = 'minecraft2'
+    # map_name = 'nav_map5'
+    # title = "Navigation 5 Agents"
+    # plt.title(title)
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'dqprm', 'yellow', label="DQPRM")
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'iqrm', 'blue', label="IQRM")
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'modular', 'green', label="Modular")
+    # plot_data_final_version('20220515', env_name, map_name, 'navigation', 'hie_iqrm2', 'red', label="MAHRM(ours)")
+
     env_name = 'pass_room'
     map_name = '4button3agent'
-    title = '{}_{}'.format(env_name, map_name)
+    title = "Pass Room"
     plt.title(title)
-    plot_data('20220416', env_name, map_name, 'pass2', 'hie_iqrm2', 'green')
-    plot_data('20220416', env_name, map_name, 'pass2_rs', 'hie_iqrm2', 'lime')
-    plot_data('20220416', env_name, map_name, 'pass3', 'hie_iqrm2', 'red')
-    plot_data('20220416', env_name, map_name, 'pass3_rs', 'hie_iqrm2', 'orange')
-    plot_data('20220419', env_name, map_name, 'pass4', 'hie_iqrm2', 'blue')
-    plot_data('20220419', env_name, map_name, 'pass4_rs', 'hie_iqrm2', 'purple')
-    plot_data('20220505', env_name, map_name, 'pass', 'hie_iqrm_3L', 'black')
-    plot_data('20220506', env_name, map_name, 'pass', 'hie_iqrm_3L', 'yellow')
+    plot_data_final_version('20220515', env_name, map_name, 'pass3', 'iqrm', 'blue',label="IQRM")
+    plot_data_final_version('20220515', env_name, map_name, 'pass', 'modular', 'green',label="Modular")
+    plot_data_final_version('20220515', env_name, map_name, 'pass', 'hie_iqrm_3L', 'red',label="MAHRM(ours)")
 
-
-
-    plt.legend(loc='best')
+    plt.legend(loc='center right')
     if save_fig:
         base_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-        fig_path = os.path.join(base_path, 'figures', title+'.pdf')
-        plt.savefig(fig_path)
+        fig_path = os.path.join(base_path, 'figures', title + '.pdf')
+        plt.savefig(fig_path, bbox_inches = 'tight')
     plt.show()
