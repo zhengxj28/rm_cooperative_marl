@@ -61,7 +61,6 @@ def plot_data(date, env_name, map_name, task_name, alg_name, color):
     plot_multi_agent_results(plot_dict, color, label=task_name + alg_name, fontsize=10)
 
 def plot_data_final_version(date, env_name, map_name, task_name, alg_name, color, label):
-
     parentDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir))
     data_path = os.path.join(parentDir, 'rm_cooperative_marl_data', date, env_name + map_name)
     file_name = os.path.join(data_path, task_name + alg_name + ".npy")

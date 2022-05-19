@@ -58,8 +58,8 @@ def pass_room_config(num_times, task_name, map_name):
     learning_params.hidden_dim = 64
     learning_params.embedding_size = 64
 
-    learning_params.buffer_size = 64
-    learning_params.batch_size = 8
+    learning_params.buffer_size = 128
+    learning_params.batch_size = 16
     learning_params.target_network_update_freq = 50
 
     tester = Tester(learning_params, testing_params)

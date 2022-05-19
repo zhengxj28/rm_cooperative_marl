@@ -107,18 +107,20 @@ from itertools import permutations
 #     c1,c2,c3 = p
 #     print("%c1,%c2,%c3"%(c1,c2,c3))
 
-########## minecraft2/3A_map_0/task1 #########
+########## pass_room/4button3agent/pass3agenti #########
 r_neg, r_mid, r_plus = 0, 0, 1
-i=1
+i=3
 print("(0, 1, 'a%d', 0)"%i)
-
-(0, 3, 'f', 0)
-(0, 4, ('a','f'), 0)
-(1, 2, 'c', 0)
-(1, 4, 'f', 0)
-(1, 5, ('c','f'), 0)
-(2, 5, 'f', 0)
-(3, 4, 'a', 0)
-(4, 5, 'c', 0)
-(5, 6, 'b', 0)
-(6, 7, 'h', 1)
+print("(0, 1, 'b%d', 0)"%i)
+print("(0, 1, 'r%d', 0)"%i)
+print("(1, 0, (), -1)")
+print("(1, 2, 'a%d', 0)"%i)
+print("(1, 2, 'b%d', 0)"%i)
+print("(1, 2, 'c%d', 0)"%i)
+print("(1, 2, 'd%d', 0)"%i)
+print("(1, 2, 'r%d', 0)"%i)
+print("(2, 1, (), -1)")
+print("(2, 3, 'c%d', 1)"%i)
+print("(2, 3, 'd%d', 1)"%i)
+print("(2, 3, 'r%d', 1)"%i)
+print("(3, 2, (), -1)")

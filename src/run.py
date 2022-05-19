@@ -36,10 +36,10 @@ if __name__ == "__main__":
 
     # env_name='buttons'
     # env_name = 'minecraft'
-    env_name = 'minecraft2'
+    # env_name = 'minecraft2'
 
-    map_name = '3A_map_0'  # 3 agents, traditional minecraft map
-    task_name = 'task3'
+    # map_name = '3A_map_0'  # 3 agents, traditional minecraft map
+    # task_name = 'task3'
     # task_name = 'task4'
     # task_name = 'task5'
     # task_name = 'task6'
@@ -59,15 +59,15 @@ if __name__ == "__main__":
     # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection
     # task_name = 'navigation_good_p'  # using good rm projection, telling each agent what to do
 
-    # env_name = 'pass_room'
-    # map_name = '4button3agent'
+    env_name = 'pass_room'
+    map_name = '4button3agent'
     # map_name = '8button5agent'
     # task_name = 'pass'
     # task_name = 'pass_rs'  # 4 states RM, worst performance
     # task_name = 'pass_rs2'
     # task_name = 'pass2'  # 3 states RM, with back transitions
     # task_name = 'pass2_rs'
-    # task_name = 'pass3'  # 31 states RM, best performance
+    task_name = 'pass3'  # 31 states RM, best performance
     # task_name = 'pass3_rs'
     # task_name = 'pass4'  # 3 states RM, without back transitions
     # task_name = 'pass4_rs'
@@ -77,10 +77,10 @@ if __name__ == "__main__":
     # alg_name = 'dqprm_s'  # decentralized q-learning for projected rm, source code
     # alg_name = 'ihrl'
     # alg_name = 'iql'
-    # alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
+    alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
     # alg_name = 'iqrm'  # independent qrm
     # alg_name = 'hie_iqrm'  # hierarchical iqrm
-    alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
+    # alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
     # alg_name = 'mul_hie_iqrm'  # multi-level hierarchical iqrm with option elimination & sub-rm generation
     # alg_name = 'hie_iqrm_3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
     # alg_name = 'modular'  # HRL baseline
