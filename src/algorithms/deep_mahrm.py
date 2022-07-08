@@ -1,6 +1,6 @@
 import numpy as np
 import random, time, os, math
-from src.Agent.hie_iqrm2_agent import Agent, High_Controller
+from src.Agent.mahrm_agent import Agent, High_Controller
 from src.tester.tester import Tester
 from src.Environments.load_env import *
 import matplotlib.pyplot as plt
@@ -238,9 +238,9 @@ def run_test(controller,
     return testing_reward, trajectory, steps
 
 
-def run_hie_iqrm2_experiment(tester,
-                             independent_trail_times,
-                             show_print=True):
+def run_mahrm_experiment(tester,
+                         independent_trail_times,
+                         show_print=True):
     """
     Run the entire q-learning with reward machines experiment a number of times specified by num_times.
 

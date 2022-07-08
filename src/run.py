@@ -14,7 +14,7 @@ def print_params(tester, alg_name):
     print('temperature T:', tester.learning_params.T)
 
     ##### for HRL methods ##########
-    if alg_name in ['hie_iqrm','hie_iqrm2','hie_iqrm_3L','mul_hie_iqrm','modular']:
+    if alg_name in ['hie_iqrm','mahrm','mahrm3L','mul_hie_iqrm','modular']:
         print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
         print("temperature of controller T_controller:", tester.learning_params.T_controller)
         print("max_option_length", tester.max_option_length)
@@ -77,12 +77,12 @@ if __name__ == "__main__":
     # alg_name = 'dqprm_s'  # decentralized q-learning for projected rm, source code
     # alg_name = 'ihrl'
     # alg_name = 'iql'
-    alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
+    # alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
     # alg_name = 'iqrm'  # independent qrm
     # alg_name = 'hie_iqrm'  # hierarchical iqrm
-    # alg_name = 'hie_iqrm2'  # hierarchical iqrm with option elimination & sub-rm generation
+    alg_name = 'mahrm'  # hierarchical iqrm with option elimination & sub-rm generation
     # alg_name = 'mul_hie_iqrm'  # multi-level hierarchical iqrm with option elimination & sub-rm generation
-    # alg_name = 'hie_iqrm_3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
+    # alg_name = 'mahrm3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
     # alg_name = 'modular'  # HRL baseline
 
     print('num_times:', independent_trail_times)
@@ -145,18 +145,18 @@ if __name__ == "__main__":
         from algorithms.hie_iqrm import run_hie_iqrm_experiment
 
         run_hie_iqrm_experiment(tester, independent_trail_times, show_print=True)
-    elif alg_name == 'hie_iqrm2':
-        from algorithms.hie_iqrm2 import run_hie_iqrm2_experiment
+    elif alg_name == 'mahrm':
+        from algorithms.mahrm import run_mahrm_experiment
 
-        run_hie_iqrm2_experiment(tester, independent_trail_times, show_print=True)
+        run_mahrm_experiment(tester, independent_trail_times, show_print=True)
     elif alg_name == 'mul_hie_iqrm':
         from algorithms.mul_hie_iqrm import run_mul_hie_iqrm_experiment
 
         run_mul_hie_iqrm_experiment(tester, independent_trail_times, show_print=True)
-    elif alg_name == 'hie_iqrm_3L':
-        from algorithms.hie_iqrm_3L import run_hie_iqrm_3L_experiment
+    elif alg_name == 'mahrm3L':
+        from algorithms.mahrm3L import run_mahrm3L_experiment
 
-        run_hie_iqrm_3L_experiment(tester, independent_trail_times, show_print=True)
+        run_mahrm3L_experiment(tester, independent_trail_times, show_print=True)
     elif alg_name == 'modular':
         from algorithms.modular import run_modular_experiment
 
