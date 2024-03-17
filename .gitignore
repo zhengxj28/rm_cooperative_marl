@@ -1,0 +1,10 @@
+/tmp
+/.vscode
+/src/baselines
+.idea/
+*.pyc
+wandb
+/data
+/logs
+/models
+.run

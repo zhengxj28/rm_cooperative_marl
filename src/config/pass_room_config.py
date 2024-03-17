@@ -15,7 +15,7 @@ def pass_room_config(num_times, task_name, map_name):
     """
 
     max_num_agents = 5
-    base_file_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+    base_file_path = os.path.join(os.path.dirname(__file__), '..', '..')
 
     rm_test_file = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name, task_name + 'team.txt')
     rm_env_file = os.path.join(base_file_path, 'reward_machines', 'pass_room', map_name, task_name + 'env.txt')
@@ -79,7 +79,7 @@ def pass_room_config(num_times, task_name, map_name):
     # Set the environment settings for the experiment
     env_settings = dict()
 
-    parentDir = os.path.abspath(os.path.join(os.getcwd()))
+    parentDir = os.path.join(os.path.dirname(__file__), '..')
     env_settings['file_map'] = os.path.join(parentDir, 'Environments', 'pass_room', 'maps', map_name + '.txt')
 
     env_settings['p'] = 0.98

@@ -1,10 +1,18 @@
 from datetime import datetime
 import os, time, sys, random
+
 sys.path.append("..")
 sys.path.append("../..")
 import numpy as np
+import argparse
+import wandb
+import torch
+import numpy as np
+import yaml
+import copy
 
 show_trajectory = False
+
 
 def print_params(tester, alg_name):
     learning_params = tester.learning_params
@@ -14,7 +22,7 @@ def print_params(tester, alg_name):
     print('temperature T:', tester.learning_params.T)
 
     ##### for HRL methods ##########
-    if alg_name in ['hie_iqrm','mahrm','mahrm3L','mul_hie_iqrm','modular']:
+    if alg_name in ['hie_iqrm', 'mahrm', 'mahrm3L', 'mul_hie_iqrm', 'modular']:
         print("decay_factor of controller gamma_controller:", tester.learning_params.gamma_controller)
         print("temperature of controller T_controller:", tester.learning_params.T_controller)
         print("max_option_length", tester.max_option_length)
@@ -28,69 +36,19 @@ def print_params(tester, alg_name):
         print("batch_size", learning_params.batch_size)
         print("target_network_update_freq:", learning_params.target_network_update_freq)
 
-if __name__ == "__main__":
-    random.seed(0)
-    start_time = time.time()
-    independent_trail_times = 10  # Number of separate trials to run the algorithm for
-    # num_agents = 3  # This will be automatically set to 3 for buttons experiment (max 10)
 
-    # env_name='buttons'
-    # env_name = 'minecraft'
-    # env_name = 'minecraft2'
+def setup_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
-    # map_name = '3A_map_0'  # 3 agents, traditional minecraft map
-    # task_name = 'task3'
-    # task_name = 'task4'
-    # task_name = 'task5'
-    # task_name = 'task6'
 
-    # map_name = 'multiA_map_0'  # 2 agents, traditional minecraft map
-    # task_name = 'task1'
-    # task_name = 'task2'
-
-    # map_name = 'nav_map0'  # 3 agents navigate to a,b,c, no misdirection
-    # map_name = 'nav_map1'  # 3 agents navigate to a,b,c, placed with misdirection
-    # map_name = 'nav_map2'  # 2 agents navigate to a,b, placed with misdirection
-    # map_name = 'nav_map3'  # 2 agents navigate to a,b, no misdirection
-    # map_name = 'nav_map5'  # 5 agents navigate to a,b,c,d,e, placed with misdirection
-
-    # task_name = 'navigation'  # simple team rm
-    # task_name = 'navigation_complex_rm'  # complex team rm, no rm projection
-    # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection
-    # task_name = 'navigation_good_p'  # using good rm projection, telling each agent what to do
-
-    env_name = 'pass_room'
-    map_name = '4button3agent'
-    # map_name = '8button5agent'
-    # task_name = 'pass'
-    # task_name = 'pass_rs'  # 4 states RM, worst performance
-    # task_name = 'pass_rs2'
-    # task_name = 'pass2'  # 3 states RM, with back transitions
-    # task_name = 'pass2_rs'
-    task_name = 'pass3'  # 31 states RM, best performance
-    # task_name = 'pass3_rs'
-    # task_name = 'pass4'  # 3 states RM, without back transitions
-    # task_name = 'pass4_rs'
-
-    ################## decide which algorithm to run ###############################
-    # alg_name= 'cqrm'  # centralized qrm
-    # alg_name = 'dqprm_s'  # decentralized q-learning for projected rm, source code
-    # alg_name = 'ihrl'
-    # alg_name = 'iql'
-    # alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
-    # alg_name = 'iqrm'  # independent qrm
-    # alg_name = 'hie_iqrm'  # hierarchical iqrm
-    alg_name = 'mahrm'  # hierarchical iqrm with option elimination & sub-rm generation
-    # alg_name = 'mul_hie_iqrm'  # multi-level hierarchical iqrm with option elimination & sub-rm generation
-    # alg_name = 'mahrm3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
-    # alg_name = 'modular'  # HRL baseline
-
-    print('num_times:', independent_trail_times)
-    print('env_name:', env_name)
-    print('map_name:', map_name)
-    print('task_name:', task_name)
-    print('alg_name:', alg_name)
-
+def get_tester(args):
+    env_name = args.env_name
+    task_name = args.task_name
+    map_name = args.map_name
+    independent_trail_times = 1
     if env_name == 'rendezvous':
         from src.config.rendezvous_config import rendezvous_config
 
@@ -113,9 +71,35 @@ if __name__ == "__main__":
         tester = pass_room_config(independent_trail_times, task_name, map_name)  # Get test object from config script
     else:
         raise ValueError('No such environment: ' + env_name)
+    tester.use_wandb = args.use_wandb
+    return tester
 
-    print_params(tester, alg_name)
 
+def run_experiment(args, seed):
+    tester = get_tester(args)
+
+    # TODO: load wandb config
+    wandb_config = dict()
+
+    if args.use_wandb:
+        wandb_config['seed'] = seed
+        print(wandb_config)
+        wandb.init(
+            project="Cooperative Multi-Agent",
+            notes='',
+            group=args.env_name,
+            name=args.algorithm if args.wandb_name == "" else args.wandb_name,
+            config=wandb_config
+        )
+    independent_trail_times = 1
+    setup_seed(seed)
+
+    alg_name = args.algorithm
+    # print('env_name:', env_name)
+    # print('map_name:', map_name)
+    # print('task_name:', task_name)
+    # print('alg_name:', alg_name)
+    # print_params(tester, alg_name)
     if alg_name == 'cqrm':
         from algorithms.cqrm import run_cqrm_experiment
 
@@ -164,11 +148,12 @@ if __name__ == "__main__":
     else:
         raise ValueError('No such algorithm: ' + alg_name)
 
-    end_time = time.time()
-    total_min = (end_time - start_time) / 60
-    print('Total time: %.2f min' % total_min)
+    if args.use_wandb:
+        wandb.finish()
+    return tester
 
 
+def save_results(tester):
     # Save the results
     parentDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
     now = datetime.now()
@@ -187,7 +172,6 @@ if __name__ == "__main__":
     if not os.path.isdir(env_path):
         os.mkdir(env_path)
 
-
     # save_file_str = r'\{}_'.format(now.strftime("%Y-%m-%d_%H-%M-%S"))
     # save_file_str = r'\{}_'.format(now.strftime("%Y-%m-%d_%H-%M"))
 
@@ -200,3 +184,81 @@ if __name__ == "__main__":
     save_file_str = os.path.join(env_path, task_name + alg_name) + '.npy'
     result_dict = tester.results['testing_steps']
     np.save(save_file_str, result_dict)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(prog="run_experiments",
+                                     description='Runs a multi-task RL experiment over a particular environment.')
+
+    parser.add_argument('--algorithm', default='mahrm', type=str,
+                        help='This parameter indicated which RL algorithm to use.')
+    parser.add_argument('--env_name', default='pass_room', type=str)
+    parser.add_argument('--map_name', default='4button3agent', type=str)
+    parser.add_argument('--task_name', default='pass', type=str)
+    parser.add_argument('--seeds', nargs='+', type=int, default=[0],
+                        help='A list of random seeds to run experiments.')
+    parser.add_argument('--wandb_name', default='', type=str)
+    parser.add_argument('--use_wandb', action='store_true',
+                        help='Whether to use wandb or not.')
+
+    args = parser.parse_args()
+
+    # num_agents = 3  # This will be automatically set to 3 for buttons experiment (max 10)
+
+    # env_name='buttons'
+    # env_name = 'minecraft'
+    # env_name = 'minecraft2'
+
+    # map_name = '3A_map_0'  # 3 agents, traditional minecraft map
+    # task_name = 'task3'
+    # task_name = 'task4'
+    # task_name = 'task5'
+    # task_name = 'task6'
+
+    # map_name = 'multiA_map_0'  # 2 agents, traditional minecraft map
+    # task_name = 'task1'
+    # task_name = 'task2'
+
+    # map_name = 'nav_map0'  # 3 agents navigate to a,b,c, no misdirection
+    # map_name = 'nav_map1'  # 3 agents navigate to a,b,c, placed with misdirection
+    # map_name = 'nav_map2'  # 2 agents navigate to a,b, placed with misdirection
+    # map_name = 'nav_map3'  # 2 agents navigate to a,b, no misdirection
+    # map_name = 'nav_map5'  # 5 agents navigate to a,b,c,d,e, placed with misdirection
+
+    # task_name = 'navigation'  # simple team rm
+    # task_name = 'navigation_complex_rm'  # complex team rm, no rm projection
+    # task_name = 'navigation_complex_rs'  # complex team rm, use handcrafted reward shaping, no rm projection
+    # task_name = 'navigation_good_p'  # using good rm projection, telling each agent what to do
+
+    # env_name = 'pass_room'
+    # map_name = '4button3agent'
+    # map_name = '8button5agent'
+    # task_name = 'pass'
+    # task_name = 'pass_rs'  # 4 states RM, worst performance
+    # task_name = 'pass_rs2'
+    # task_name = 'pass2'  # 3 states RM, with back transitions
+    # task_name = 'pass2_rs'
+    # task_name = 'pass3'  # 31 states RM, best performance
+    # task_name = 'pass3_rs'
+    # task_name = 'pass4'  # 3 states RM, without back transitions
+    # task_name = 'pass4_rs'
+
+    ################## decide which algorithm to run ###############################
+    # alg_name= 'cqrm'  # centralized qrm
+    # alg_name = 'dqprm_s'  # decentralized q-learning for projected rm, source code
+    # alg_name = 'ihrl'
+    # alg_name = 'iql'
+    # alg_name = 'dqprm'  # decentralized q-learning for projected rm, modified code
+    # alg_name = 'iqrm'  # independent qrm
+    # alg_name = 'hie_iqrm'  # hierarchical iqrm
+    # alg_name = 'mahrm'  # hierarchical iqrm with option elimination & sub-rm generation
+    # alg_name = 'mul_hie_iqrm'  # multi-level hierarchical iqrm with option elimination & sub-rm generation
+    # alg_name = 'mahrm3L'  # 3-level hierarchical iqrm with option elimination & sub-rm generation
+    # alg_name = 'modular'  # HRL baseline
+
+    for seed in args.seeds:
+        start_time = time.time()
+        run_experiment(args, seed)
+        end_time = time.time()
+        total_min = (end_time - start_time) / 60
+        print('Total time: %.2f min' % total_min)

@@ -4,7 +4,7 @@ from src.Agent.mahrm_agent import Agent, High_Controller
 from src.tester.tester import Tester
 from src.Environments.load_env import *
 import matplotlib.pyplot as plt
-
+import wandb
 
 def run_qlearning_task(epsilon,
                        tester,
@@ -205,7 +205,7 @@ def run_test(controller,
     # Starting interaction with the environment
     while steps < num_steps:
         o = controller.get_next_option(-1.0, learning_params)
-        print([agent_list[ag_id].avail_rms[o[ag_id]].tag for ag_id in range(len(o))])  # show which sub-rm is executed
+        # print([agent_list[ag_id].avail_rms[o[ag_id]].tag for ag_id in range(len(o))])  # show which sub-rm is executed
         for ag_id in range(num_agents):
             agent_list[ag_id].set_rm(rm_id=o[ag_id])
         tau = 0
@@ -232,6 +232,10 @@ def run_test(controller,
         print('Reward of {} achieved in {} steps. Current step: {} of {}'.format(testing_reward, steps,
                                                                                  tester.current_step,
                                                                                  tester.total_steps))
+    if tester.use_wandb:
+        wandb.log({"reward": testing_reward,
+                   "testing steps": steps,
+                   "avg_reward": testing_reward/steps})
     from src.run import show_trajectory
     if show_trajectory:
         testing_env.show()
