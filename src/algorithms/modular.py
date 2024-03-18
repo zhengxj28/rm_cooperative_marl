@@ -4,7 +4,7 @@ from src.Agent.modular_agent import Agent, High_Controller
 from src.tester.tester import Tester
 from src.Environments.load_env import *
 import matplotlib.pyplot as plt
-
+import wandb
 
 def run_qlearning_task(epsilon,
                        tester,
@@ -239,6 +239,10 @@ def run_test(controller,
         print('Reward of {} achieved in {} steps. Current step: {} of {}'.format(testing_reward, steps,
                                                                                  tester.current_step,
                                                                                  tester.total_steps))
+    if tester.use_wandb:
+        wandb.log({"reward": testing_reward,
+                   "testing steps": steps,
+                   "avg_reward": testing_reward/steps})
     from src.run import show_trajectory
     if show_trajectory:
         testing_env.show()
