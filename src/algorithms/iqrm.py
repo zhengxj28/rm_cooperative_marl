@@ -5,7 +5,7 @@ from src.tester.tester import Tester
 from src.Agent.iqrm_agent import Agent
 from src.Environments.load_env import *
 import matplotlib.pyplot as plt
-
+import wandb
 
 def run_qlearning_task(epsilon,
                        tester,
@@ -181,11 +181,11 @@ def run_test(agent_list,
 
     trajectory = []
 
-    step = 0
+    steps = 0
 
     # Starting interaction with the environment
     for t in range(testing_params.num_steps):
-        step = step + 1
+        steps = steps + 1
         s_team = testing_env.get_state()
         # Perform a team step
         for i in range(num_agents):
@@ -212,13 +212,17 @@ def run_test(agent_list,
             break
 
     if show_print:
-        print('Reward of {} achieved in {} steps. Current step: {} of {}'.format(testing_reward, step,
+        print('Reward of {} achieved in {} steps. Current step: {} of {}'.format(testing_reward, steps,
                                                                                  tester.current_step,
                                                                                  tester.total_steps))
+    if tester.use_wandb:
+        wandb.log({"reward": testing_reward,
+                   "testing steps": steps,
+                   "avg_reward": testing_reward/steps})
     from src.run import show_trajectory
     if show_trajectory:
         testing_env.show()
-    return testing_reward, trajectory, step
+    return testing_reward, trajectory, steps
 
 
 def run_iqrm_experiment(tester,
