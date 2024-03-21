@@ -291,7 +291,11 @@ class High_Controller:
 
         pr = torch.tensor(pr)
         dist = torch.distributions.Categorical(pr)
-        o = dist.sample()
+        # do not use softmax(q) to choose option when testing
+        if epsilon==-1.0:
+            o = np.argmax(self.q[self.u, :].flatten())
+        else:
+            o = dist.sample()
         o = np.unravel_index(o, self.dim_option)
 
         return list(o)
