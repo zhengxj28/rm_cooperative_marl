@@ -83,6 +83,8 @@ def run_experiment(args, seed):
 
     if args.use_wandb:
         wandb_config['seed'] = seed
+        wandb_config['map_name'] = args.map_name
+        wandb_config['task_name'] = args.task_name
         print(wandb_config)
         wandb.init(
             project="Cooperative Multi-Agent",
