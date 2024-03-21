@@ -205,7 +205,7 @@ def run_test(controller,
     # Starting interaction with the environment
     while steps < num_steps:
         o = controller.get_next_option(-1.0, learning_params)
-        # print([agent_list[ag_id].avail_rms[o[ag_id]].tag for ag_id in range(len(o))])  # show which sub-rm is executed
+        print([agent_list[ag_id].avail_rms[o[ag_id]].tag for ag_id in range(len(o))])  # show which sub-rm is executed
         for ag_id in range(num_agents):
             agent_list[ag_id].set_rm(rm_id=o[ag_id])
         tau = 0
