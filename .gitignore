@@ -8,3 +8,5 @@ wandb
 /logs
 /models
 .run
+figures
+figures_cn
