@@ -72,6 +72,7 @@ def get_tester(args):
     else:
         raise ValueError('No such environment: ' + env_name)
     tester.use_wandb = args.use_wandb
+    tester.option_elimination = args.option_elimination
     return tester
 
 
@@ -155,37 +156,37 @@ def run_experiment(args, seed):
     return tester
 
 
-def save_results(tester):
-    # Save the results
-    parentDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-    now = datetime.now()
-
-    data_path = os.path.join(parentDir, os.pardir, 'rm_cooperative_marl_data')
-    if not os.path.isdir(data_path):
-        os.mkdir(data_path)
-
-    experiment_data_path = os.path.join(data_path, now.strftime("%Y%m%d"))
-
-    if not os.path.isdir(experiment_data_path):
-        os.mkdir(experiment_data_path)
-
-    env_path = os.path.join(experiment_data_path, env_name + map_name)
-
-    if not os.path.isdir(env_path):
-        os.mkdir(env_path)
-
-    # save_file_str = r'\{}_'.format(now.strftime("%Y-%m-%d_%H-%M-%S"))
-    # save_file_str = r'\{}_'.format(now.strftime("%Y-%m-%d_%H-%M"))
-
-    ### store as pickle
-    # save_file_str = save_file_str + experiment + '.p'
-    # save_file = open(experiment_data_path + save_file_str, "wb")
-    # pickle.dump(tester, save_file)
-
-    ### store as numpy dict
-    save_file_str = os.path.join(env_path, task_name + alg_name) + '.npy'
-    result_dict = tester.results['testing_steps']
-    np.save(save_file_str, result_dict)
+# def save_results(tester):
+#     # Save the results
+#     parentDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+#     now = datetime.now()
+#
+#     data_path = os.path.join(parentDir, os.pardir, 'rm_cooperative_marl_data')
+#     if not os.path.isdir(data_path):
+#         os.mkdir(data_path)
+#
+#     experiment_data_path = os.path.join(data_path, now.strftime("%Y%m%d"))
+#
+#     if not os.path.isdir(experiment_data_path):
+#         os.mkdir(experiment_data_path)
+#
+#     env_path = os.path.join(experiment_data_path, env_name + map_name)
+#
+#     if not os.path.isdir(env_path):
+#         os.mkdir(env_path)
+#
+#     # save_file_str = r'\{}_'.format(now.strftime("%Y-%m-%d_%H-%M-%S"))
+#     # save_file_str = r'\{}_'.format(now.strftime("%Y-%m-%d_%H-%M"))
+#
+#     ### store as pickle
+#     # save_file_str = save_file_str + experiment + '.p'
+#     # save_file = open(experiment_data_path + save_file_str, "wb")
+#     # pickle.dump(tester, save_file)
+#
+#     ### store as numpy dict
+#     save_file_str = os.path.join(env_path, task_name + alg_name) + '.npy'
+#     result_dict = tester.results['testing_steps']
+#     np.save(save_file_str, result_dict)
 
 
 if __name__ == "__main__":
@@ -201,6 +202,8 @@ if __name__ == "__main__":
                         help='A list of random seeds to run experiments.')
     parser.add_argument('--wandb_name', default='', type=str)
     parser.add_argument('--use_wandb', action='store_true',
+                        help='Whether to use wandb or not.')
+    parser.add_argument('--option_elimination', action='store_true',
                         help='Whether to use wandb or not.')
 
     args = parser.parse_args()

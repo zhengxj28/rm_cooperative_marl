@@ -191,7 +191,7 @@ class High_Controller:
     subtask (rm) properly to complete the whole team task efficiently.
     """
 
-    def __init__(self, rm_file_name, num_rm_list, agent_list):
+    def __init__(self, rm_file_name, num_rm_list, agent_list, option_elimination):
         """
         Initialize agent object.
 
@@ -202,6 +202,7 @@ class High_Controller:
         num_rm_list : list
             Num of available rm of each agent,
         """
+        self.option_elimination = option_elimination
         self.rm_file_name = rm_file_name  # team task
         self.rm = SparseRewardMachine(self.rm_file_name)
 
@@ -276,7 +277,8 @@ class High_Controller:
             weight = np.exp(self.q[self.u, :] * T)
 
         # action mask, eliminate forbidden option
-        weight = np.multiply(weight, self.action_mask_matrix[self.u, :])
+        if self.option_elimination:
+            weight = np.multiply(weight, self.action_mask_matrix[self.u, :])
 
         pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
         pr = np.reshape(pr, [pr.size])  # reshape to 1d array

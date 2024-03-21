@@ -112,7 +112,7 @@ def run_qlearning_task(epsilon,
                 # Pass only the q-function by reference so that the testing updates the original agent's q-function.
                 agent_copy.q = agent_list[i].q
                 agent_list_copy.append(agent_copy)
-            controller_copy = High_Controller(tester.rm_test_file, controller.dim_option, agent_list_copy)
+            controller_copy = High_Controller(tester.rm_test_file, controller.dim_option, agent_list_copy, tester.option_elimination)
             controller_copy.q = controller.q
             # Run a test of the performance of the agents
             testing_reward, trajectory, testing_steps = run_test(controller_copy,
@@ -282,7 +282,7 @@ def run_mahrm_experiment(tester,
             agent_i = Agent(local_event_set, testing_env.num_states, actions, i)
             agent_list.append(agent_i)
             num_rm_list.append(agent_i.num_rms)
-        controller = High_Controller(rm_test_file, num_rm_list, agent_list)
+        controller = High_Controller(rm_test_file, num_rm_list, agent_list, tester.option_elimination)
         num_episodes = 0
 
         # Task loop
