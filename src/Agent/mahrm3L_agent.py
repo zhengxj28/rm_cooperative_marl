@@ -191,7 +191,7 @@ class L1_Controller:
     subtask (rm) properly to complete the whole team task efficiently.
     """
 
-    def __init__(self, rm_file_name, proposition, ag_group_list, num_rm_list, agent_list):
+    def __init__(self, rm_file_name, proposition, ag_group_list, num_rm_list, agent_list, option_elimination):
         """
         Initialize agent object.
 
@@ -202,6 +202,7 @@ class L1_Controller:
         num_rm_list : list
             Num of available rm of each agent,
         """
+        self.option_elimination = option_elimination
         self.tag = proposition
         self.ag_group_list = ag_group_list
         self.rm_file_name = rm_file_name  # level-1 subtask
@@ -272,7 +273,8 @@ class L1_Controller:
             weight = np.exp(self.q[self.u, :] * T)
 
         # action mask, eliminate forbidden option
-        weight = np.multiply(weight, self.action_mask_matrix[self.u, :])
+        if self.option_elimination:
+            weight = np.multiply(weight, self.action_mask_matrix[self.u, :])
 
         pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
         pr = np.reshape(pr, [pr.size])  # reshape to 1d array
@@ -355,7 +357,7 @@ class L2_Controller:
     subtask (rm) properly to complete the whole team task efficiently.
     """
 
-    def __init__(self, rm_file_name, num_agents):
+    def __init__(self, rm_file_name, num_agents, option_elimination):
         """
         Initialize agent object.
 
@@ -366,6 +368,7 @@ class L2_Controller:
         num_rm_list : list
             Num of available rm of each agent,
         """
+        self.option_elimination = option_elimination
         self.rm_file_name = rm_file_name  # team task
         self.rm = SparseRewardMachine(self.rm_file_name)
 
@@ -435,7 +438,8 @@ class L2_Controller:
             weight = np.exp(self.q[self.u, :] * T)
 
         # action mask, eliminate forbidden option
-        weight = np.multiply(weight, self.action_mask_matrix[self.u, :])
+        if self.option_elimination:
+            weight = np.multiply(weight, self.action_mask_matrix[self.u, :])
 
         pr = weight / np.sum(weight)  # pr[a] is probability of taking action a
         pr = np.reshape(pr, [pr.size])  # reshape to 1d array

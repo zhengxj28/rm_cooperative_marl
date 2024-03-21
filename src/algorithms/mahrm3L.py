@@ -161,12 +161,13 @@ def run_qlearning_task(tester,
                                                 proposition=controller.tag,
                                                 ag_group_list=controller.ag_group_list,
                                                 num_rm_list=controller.num_rm_list,
-                                                agent_list=agent_list_copy)
+                                                agent_list=agent_list_copy,
+                                                option_elimination = tester.option_elimination)
                 controller_copy.q = controller.q
                 l1_controller_list_copy.append(controller_copy)
 
             l2_rm_file_name = get_rm_file_name(tester, level=2, proposition="team")
-            l2_controller_copy = L2_Controller(l2_rm_file_name, num_agents)
+            l2_controller_copy = L2_Controller(l2_rm_file_name, num_agents, tester.option_elimination)
             l2_controller_copy.q = l2_controller.q
             # Run a test of the performance of the agents
             testing_reward, trajectory, testing_steps = run_test(l2_controller_copy,
@@ -362,14 +363,14 @@ def run_mahrm3L_experiment(tester,
 
         # Create high-high-level controller
         l2_rm_file_name = get_rm_file_name(tester, level=2, proposition="team")
-        l2_controller = L2_Controller(l2_rm_file_name, num_agents)
+        l2_controller = L2_Controller(l2_rm_file_name, num_agents, tester.option_elimination)
 
         # Create list of high-level controllers, each corresponding to one proposition of high-high-level
         l1_controller_list = list()
         for proposition in l2_controller.local_propositions:
             l1_rm_file_name = get_rm_file_name(tester, level=1, proposition=proposition)
             for agent_order in permutations([i for i in range(1, num_agents + 1)]):
-                controller = L1_Controller(l1_rm_file_name, proposition, list(agent_order), num_rm_list, agent_list)
+                controller = L1_Controller(l1_rm_file_name, proposition, list(agent_order), num_rm_list, agent_list, tester.option_elimination)
                 l1_controller_list.append(controller)
 
         num_episodes = 0
@@ -398,7 +399,7 @@ def run_mahrm3L_experiment(tester,
 
 
 def get_rm_file_name(tester, level, proposition):
-    rm_file_Dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, 'reward_machines'))
+    rm_file_Dir = os.path.join(os.path.dirname(__file__), "..", "..", "reward_machines")
     rm_file_path = os.path.join(rm_file_Dir, tester.env_name, tester.map_name)
     rm_file_name = tester.task_name + "L%d" % level + proposition + ".txt"
     return os.path.join(rm_file_path, rm_file_name)
